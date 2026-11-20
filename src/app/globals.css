@@ -1,26 +1,170 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
+/* ─── Custom Theme Variables ──────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --accent-red: #e54d2e;
+  --accent-amber: #f59e0b;
+  --accent-cyan: #0284c7;
+  --accent-green: #10b981;
+  --surface-glass: rgba(255, 255, 255, 0.92);
+  --surface-glass-border: rgba(226, 232, 240, 0.9);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  /* ─── Bengal Editorial Palette Tokens ─── */
+  --brand-emerald: #005a43;
+  --brand-emerald-hover: #003e2e;
+  --brand-emerald-tint: #ecfdf5;
+  --brand-crimson: #d93829;
+  --brand-crimson-hover: #b6281b;
+  --surface-paper: #faf9f6;
+  --ink-primary: #0f1f1b;
+  --surface-dark: #07110e;
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #f1f5f9;
+  --bg-primary: #030712;
+  --bg-secondary: #0b0f19;
+  --bg-tertiary: #111827;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #1e293b;
+  --accent-cyan: #38bdf8;
+  --surface-glass: rgba(3, 7, 18, 0.88);
+  --surface-glass-border: rgba(30, 41, 59, 0.8);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.65);
+  /* ─── Bengal Editorial Palette Tokens (Dark) ─── */
+  --brand-emerald: #10b981;
+  --brand-emerald-hover: #059669;
+  --brand-emerald-tint: rgba(16, 185, 129, 0.12);
+  --brand-crimson: #ef4444;
+  --brand-crimson-hover: #dc2626;
+  --surface-paper: #07110e;
+  --ink-primary: #f1f5f9;
+  --surface-dark: #040907;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-tertiary: var(--text-muted);
+  --color-border: var(--border-color);
+  --color-accent-red: var(--accent-red);
+  --color-accent-amber: var(--accent-amber);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-green: var(--accent-green);
+  --color-accent: var(--accent-cyan);
+  --color-brand-emerald: var(--brand-emerald);
+  --color-brand-emerald-hover: var(--brand-emerald-hover);
+  --color-brand-emerald-tint: var(--brand-emerald-tint);
+  --color-brand-crimson: var(--brand-crimson);
+  --color-brand-crimson-hover: var(--brand-crimson-hover);
+  --color-surface-paper: var(--surface-paper);
+  --color-ink-primary: var(--ink-primary);
+  --color-surface-dark: var(--surface-dark);
+  --font-sans: var(--font-inter);
+  --font-bangla: var(--font-hind-siliguri);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─── Task 1: Strict Layered Base Styles (No Unlayered Resets) ─ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: var(--font-inter), var(--font-hind-siliguri), system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100vh;
+    overflow-x: clip;
+    overflow-y: auto;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-inter), var(--font-hind-siliguri), system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ─── MapLibre Canvas Overrides ────────────────────────────── */
+.maplibregl-canvas {
+  outline: none;
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px !important;
+  opacity: 0.6;
+}
+
+/* ─── Custom Scrollbar ─────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.55);
+}
+
+/* ─── Severity Badges ──────────────────────────────────────── */
+.severity-critical {
+  background: rgba(229, 77, 46, 0.16);
+  color: #ef4444;
+  border: 1px solid rgba(229, 77, 46, 0.35);
+}
+.dark .severity-critical {
+  background: rgba(229, 77, 46, 0.22);
+  color: #f87171;
+  border: 1px solid rgba(229, 77, 46, 0.45);
+}
+
+.severity-high {
+  background: rgba(245, 158, 11, 0.16);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.dark .severity-high {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.severity-advisory {
+  background: rgba(2, 132, 199, 0.14);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.30);
+}
+.dark .severity-advisory {
+  background: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.40);
 }
