@@ -19,7 +19,7 @@
 ## Quick Start
 
 ```bash
-cd Aparajeyo_Bangla
+cd aparajeyo-bangla
 bun install
 bun run dev        # → http://localhost:3000 (auto-runs copy-maplibre-worker)
 bun run build      # production build (zero TS errors verified)
