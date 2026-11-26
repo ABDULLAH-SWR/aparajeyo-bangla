@@ -1,0 +1,81 @@
+{
+  "id": "f00d1001-0000-4000-8000-000000000001",
+  "pin_type": "food_poi",
+  "district_id": "BD3026",
+  "district_name_en": "Dhaka",
+  "district_name_bn": "ঢাকা",
+  "upazila_id": "BD30262000",
+  "upazila_name_en": "Dhaka South City Corporation",
+  "upazila_name_bn": "ঢাকা দক্ষিণ সিটি কর্পোরেশন",
+  "coordinates": [90.4072, 23.7176],
+  "name_en": "Example Old Dhaka Kacchi House",
+  "name_bn": "উদাহরণ পুরান ঢাকা কাচ্চি হাউস",
+  "category": "restaurant",
+  "cuisines": ["biryani_kacchi", "bangladeshi", "kebab_grill"],
+  "description_en": "Fictional sample restaurant in Old Dhaka used to test multi-photo Wikimedia credits and multi-video chapter embeds.",
+  "description_bn": "মাল্টি-ফটো উইকিমিডিয়া ক্রেডিট এবং চ্যাপ্টারসহ ইউটিউব ভিডিও এম্বেড পরীক্ষার জন্য পুরান ঢাকার একটি নমুনা রেস্তোরাঁ।",
+  "address_en": "14 Example Kazi Alauddin Road, Old Dhaka 1100",
+  "address_bn": "১৪ উদাহরণ কাজী আলাউদ্দিন রোড, পুরান ঢাকা ১১০০",
+  "opening_hours": "Mo-Su 11:30-23:30",
+  "phone": "+8801700000001",
+  "website": "https://example.aparajeyo.com/food/demo-kacchi",
+  "photos": [
+    {
+      "thumb_url": "https://img.aparajeyo.com/demo_hmac_sig_01/rs:fit:320:0/plain/s3://aparajeyo/photos/food/f00d1001-0000-4000-8000-000000000001/a1b2c3d4.webp",
+      "url": "https://img.aparajeyo.com/demo_hmac_sig_01_lg/rs:fit:1280:0/plain/s3://aparajeyo/photos/food/f00d1001-0000-4000-8000-000000000001/a1b2c3d4.webp",
+      "width": 1600,
+      "height": 1200,
+      "source": "wikimedia",
+      "credit": {
+        "author": "Example Commons Contributor",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "source_page_url": "https://commons.wikimedia.org/wiki/File:Example_Kacchi_Platter_Dhaka.jpg"
+      }
+    },
+    {
+      "thumb_url": "https://img.aparajeyo.com/demo_hmac_sig_02/rs:fit:320:0/plain/s3://aparajeyo/photos/food/f00d1001-0000-4000-8000-000000000001/b2c3d4e5.webp",
+      "url": "https://img.aparajeyo.com/demo_hmac_sig_02_lg/rs:fit:1280:0/plain/s3://aparajeyo/photos/food/f00d1001-0000-4000-8000-000000000001/b2c3d4e5.webp",
+      "width": 1440,
+      "height": 1080,
+      "source": "wikimedia",
+      "credit": {
+        "author": "Example Heritage Archivist",
+        "license": "CC0 1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "source_page_url": "https://commons.wikimedia.org/wiki/File:Example_Borhani_Glass_Old_Dhaka.jpg"
+      }
+    }
+  ],
+  "youtube_video_ids": ["dQw4w9WgXcQ", "jNQXAC9IVRw"],
+  "videos": [
+    {
+      "video_id": "dQw4w9WgXcQ",
+      "title": "পুরান ঢাকার কাচ্চি ও বোরহানি ট্যুর | Old Dhaka Food Tour",
+      "channel_id": "UC_EXAMPLE_FOOD_VLOG_01",
+      "channel_title": "Dhaka Plate Chronicles (Sample)",
+      "published_at": "2026-10-18T19:30:00+06:00",
+      "duration_seconds": 742,
+      "start_seconds": 145
+    },
+    {
+      "video_id": "jNQXAC9IVRw",
+      "title": "Traditional Mutton Kacchi Review in Old Dhaka",
+      "channel_id": "UC_EXAMPLE_FOOD_VLOG_02",
+      "channel_title": "Bengal Bites (Sample)",
+      "published_at": "2026-11-02T20:15:00+06:00",
+      "duration_seconds": 518,
+      "start_seconds": null
+    }
+  ],
+  "source": "osm",
+  "source_id": "node/9900000001",
+  "osm_attribution": {
+    "text": "© OpenStreetMap contributors",
+    "url": "https://www.openstreetmap.org/copyright",
+    "license": "ODbL-1.0"
+  },
+  "rating": null,
+  "review_count": null,
+  "updated_at": "2026-11-26T14:00:00+06:00"
+}
