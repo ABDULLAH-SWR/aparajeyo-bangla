@@ -1,7 +1,7 @@
 /**
- * Aparajeyo: Food <-> Map Integration Contract Types (v0.1 - M0)
+ * Aparajeyo: Food <-> Map Integration Contract Types (v0.1 - M0/M2)
  *
- * Mirror of Aparajeyo_Doc/Documentaion/contracts/food_map/types.ts.
+ * Mirrors Aparajeyo_Doc/Documentaion/contracts/food_map/types.ts.
  * Zero-dependency TypeScript types shared between the Food track
  * (places-media-sync / geospatial-api) and Product B (Interactive Map).
  * All JSON payloads use snake_case.
@@ -52,6 +52,8 @@ export interface FoodPinsQueryParams {
   category?: string;
   /** When true, return only places with at least one approved video. */
   has_video?: boolean;
+  /** Optional: trigger live upstream sync/refresh before responding. */
+  refresh?: boolean;
 }
 
 export interface FoodPinProperties {
@@ -92,7 +94,7 @@ export interface FoodPinsMetadata {
   total_count: number;
   /** True when results hit the response cap (2,000 national / 5,000 scoped). */
   truncated: boolean;
-  /** Monthly dataset version date (YYYY-MM-DD). */
+  /** Monthly/live dataset version date (YYYY-MM-DD). */
   dataset_version: string;
   attribution_text: string;
 }
@@ -191,7 +193,33 @@ export interface FoodPinDetail {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 3. Standard Error Envelope                                                 */
+/* 3. Live Health & Sync Metadata                                             */
+/* -------------------------------------------------------------------------- */
+
+export interface FoodHealthResponse {
+  status: "ok";
+  service: "aparajeyo-food-api";
+  dataset_version: string | null;
+  last_sync_at: string | null;
+  total_places: number;
+  active_places: number;
+  districts_covered: number;
+  total_photos: number;
+  total_videos: number;
+  imgproxy_enabled: boolean;
+}
+
+export interface FoodSyncResponse {
+  status: "synced";
+  source: string;
+  imported_count: number;
+  active_places: number;
+  dataset_version: string;
+  synced_at: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. Standard Error Envelope                                                 */
 /* -------------------------------------------------------------------------- */
 
 export type FoodErrorCode =
@@ -200,6 +228,7 @@ export type FoodErrorCode =
   | "INVALID_BBOX"
   | "INVALID_CATEGORY"
   | "FOOD_PLACE_NOT_FOUND"
+  | "UPSTREAM_UNAVAILABLE"
   | "INTERNAL_ERROR"
   | string;
 

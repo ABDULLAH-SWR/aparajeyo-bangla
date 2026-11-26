@@ -70,16 +70,15 @@ export const FOOD_CUISINE_META: Record<FoodCuisine, FoodCuisineMeta> = {
 };
 
 /**
- * Resolves the configured Food API base URL when live endpoints are connected.
- * Returns null when running strictly on local M0 contract mocks.
+ * Resolves the live Food API base URL.
+ * Defaults to `http://localhost:8002` in local development when env vars are unset.
  */
-export function getFoodApiBaseUrl(): string | null {
+export function getFoodApiBaseUrl(): string {
   const raw =
     process.env.NEXT_PUBLIC_FOOD_API_BASE_URL ??
     process.env.FOOD_API_BASE_URL ??
-    "";
-  const trimmed = raw.trim().replace(/\/+$/, "");
-  return trimmed.length > 0 ? trimmed : null;
+    `http://localhost:${FOOD_OVERLAY_SPEC.default_local_port}`;
+  return raw.trim().replace(/\/+$/, "");
 }
 
 /** Builds a privacy-enhanced YouTube nocookie embed URL with optional chapter offset. */

@@ -1,0 +1,8 @@
+data/
+api/node_modules/
+workers/.venv/
+**/__pycache__/
+*.pyc
+*.osm.pbf
+*.parquet
+.env

@@ -1,0 +1,17 @@
+[project]
+name = "aparajeyo-food-workers"
+version = "0.1.0"
+description = "Food overlay Python workers (OSM, Overture, Wikimedia, YouTube, Valkey cache)"
+requires-python = ">=3.12"
+dependencies = [
+  "boto3>=1.35.0",
+  "httpx>=0.28.0",
+  "normalizer @ git+https://github.com/csebuetnlp/normalizer",
+  "osmium>=4.0.0",
+  "overturemaps>=2.1.1",
+  "psycopg[binary]>=3.2.0",
+  "pyarrow>=18.0.0",
+  "pyyaml>=6.0.2",
+  "shapely>=2.0.6",
+  "valkey>=6.0.0",
+]

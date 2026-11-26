@@ -1,0 +1,79 @@
+# Shared FoodCategory & FoodCuisine mapping for OSM + Overture Maps (Guide §5.2–5.3)
+
+osm_amenity_map:
+  restaurant: restaurant
+  fast_food: fast_food
+  cafe: cafe
+  food_court: food_court
+  ice_cream: dessert
+  street_vendor: street_food
+
+osm_shop_map:
+  confectionery: sweets_bakery
+  pastry: sweets_bakery
+  bakery: sweets_bakery
+  ice_cream: dessert
+  tea: tea_stall
+
+overture_category_map:
+  restaurant: restaurant
+  asian_restaurant: restaurant
+  bangladeshi_restaurant: restaurant
+  indian_restaurant: restaurant
+  chinese_restaurant: restaurant
+  thai_restaurant: restaurant
+  biryani_restaurant: restaurant
+  seafood_restaurant: restaurant
+  kebab_shop: restaurant
+  fast_food_restaurant: fast_food
+  burger_restaurant: fast_food
+  pizza_restaurant: fast_food
+  chicken_restaurant: fast_food
+  fried_chicken_restaurant: fast_food
+  sandwich_shop: fast_food
+  cafe: cafe
+  coffee_shop: cafe
+  tea_room: tea_stall
+  bubble_tea: tea_stall
+  bakery: sweets_bakery
+  pastry_shop: sweets_bakery
+  cake_shop: sweets_bakery
+  confectionery: sweets_bakery
+  dessert_shop: dessert
+  ice_cream_shop: dessert
+  juice_bar: dessert
+  food_court: food_court
+  food_stand: street_food
+  food_truck: street_food
+  street_vendor: street_food
+  street_food: street_food
+
+tea_keywords:
+  - tea
+  - cha
+  - চা
+  - tong
+  - টং
+
+sweet_keywords:
+  - sweet
+  - sweets
+  - mishti
+  - misti
+  - doi
+  - roshogolla
+  - chomchom
+  - মিষ্টি
+  - দই
+  - বেকারি
+
+cuisine_keywords:
+  bangladeshi: [bangladeshi, bengali, deshi, bhorta, bhuna, বাংলাদেশি, বাঙালি]
+  biryani_kacchi: [biryani, biriyani, kacchi, tehari, morog_polao, বিরিয়ানি, কাচ্চি, তেহারি]
+  fish_seafood: [fish, seafood, ilish, hilsa, shutki, মাছ, ইলিশ]
+  kebab_grill: [kebab, kabab, grill, bbq, shawarma, tikka, চাপ, কাবাব, গ্রিল]
+  pitha: [pitha, পিঠা]
+  mishti: [mishti, sweet, sweets, doi, roshogolla, chomchom, মিষ্টি, দই]
+  chinese_thai: [chinese, thai, asian, noodles, momo, wonton, চাইনিজ, থাই]
+  indian: [indian, tandoori, dosa, north_indian, south_indian, ইন্ডিয়ান]
+  western: [burger, pizza, pasta, steak, sandwich, american, italian, mexican, বার্গার, পিজ্জা]

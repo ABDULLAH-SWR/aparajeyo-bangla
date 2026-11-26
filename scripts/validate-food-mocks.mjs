@@ -294,42 +294,25 @@ function main() {
   const districtsById = new Map((geo?.districts ?? []).map((d) => [d.id, d]));
   const upazilasById = new Map((geo?.upazilas ?? []).map((u) => [u.id, u]));
 
-  const appMocksDir = path.join(repoRoot, "src/features/food/mocks");
   const docMocksDir = path.resolve(repoRoot, "../Aparajeyo_Doc/Documentaion/contracts/food_map/mocks");
-
-  const dirsToCheck = [appMocksDir];
-  if (fs.existsSync(docMocksDir)) dirsToCheck.push(docMocksDir);
-
-  for (const dir of dirsToCheck) {
-    validatePinsCollection(
-      path.join(dir, "food_pins.geojson.json"),
-      districtsById,
-      upazilasById,
-      errors
-    );
-    validatePinDetail(path.join(dir, "food_pin_detail.json"), districtsById, upazilasById, errors);
-    validatePinDetail(
-      path.join(dir, "food_pin_detail_minimal.json"),
-      districtsById,
-      upazilasById,
-      errors
-    );
+  if (!fs.existsSync(docMocksDir)) {
+    console.error(`Contract mocks directory not found at ${docMocksDir}`);
+    process.exit(1);
   }
 
-  // Verify app mocks stay byte-identical to contract mocks when Aparajeyo_Doc is present.
-  if (fs.existsSync(docMocksDir)) {
-    for (const file of [
-      "food_pins.geojson.json",
-      "food_pin_detail.json",
-      "food_pin_detail_minimal.json",
-    ]) {
-      const a = fs.readFileSync(path.join(appMocksDir, file), "utf8").replace(/\r\n/g, "\n");
-      const b = fs.readFileSync(path.join(docMocksDir, file), "utf8").replace(/\r\n/g, "\n");
-      if (a !== b) {
-        errors.push(`Mock drift detected between Aparajeyo_Bangla and Aparajeyo_Doc for ${file}`);
-      }
-    }
-  }
+  validatePinsCollection(
+    path.join(docMocksDir, "food_pins.geojson.json"),
+    districtsById,
+    upazilasById,
+    errors
+  );
+  validatePinDetail(path.join(docMocksDir, "food_pin_detail.json"), districtsById, upazilasById, errors);
+  validatePinDetail(
+    path.join(docMocksDir, "food_pin_detail_minimal.json"),
+    districtsById,
+    upazilasById,
+    errors
+  );
 
   if (errors.length > 0) {
     console.error(`Food mock validation FAILED (${errors.length} issue(s)):`);

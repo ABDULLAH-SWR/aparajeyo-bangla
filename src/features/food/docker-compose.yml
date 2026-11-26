@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: aparajeyo-food-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-food}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-food}
+      POSTGRES_DB: ${POSTGRES_DB:-aparajeyo_food}
+    ports:
+      - "${FOOD_PG_PORT:-5433}:5432"
+    volumes:
+      - food_pgdata:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-food} -d ${POSTGRES_DB:-aparajeyo_food}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    container_name: aparajeyo-food-valkey
+    restart: unless-stopped
+    ports:
+      - "${FOOD_VALKEY_PORT:-6382}:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  garage:
+    image: dxflrs/garage:v1.0.1
+    container_name: aparajeyo-food-garage
+    restart: unless-stopped
+    ports:
+      - "${FOOD_S3_PORT:-3900}:3900"
+      - "${FOOD_GARAGE_ADMIN_PORT:-3903}:3903"
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - food_garage_meta:/var/lib/garage/meta
+      - food_garage_data:/var/lib/garage/data
+
+  imgproxy:
+    image: darthsim/imgproxy:latest
+    container_name: aparajeyo-food-imgproxy
+    restart: unless-stopped
+    depends_on:
+      - garage
+    ports:
+      - "${FOOD_IMGPROXY_PORT:-8081}:8080"
+    environment:
+      IMGPROXY_KEY: ${IMGPROXY_KEY:-7365637265746b657961706172616a65796f666f6f64696d6770726f78793031}
+      IMGPROXY_SALT: ${IMGPROXY_SALT:-73656372657473616c7461706172616a65796f666f6f64696d6770726f787930}
+      IMGPROXY_USE_S3: "true"
+      IMGPROXY_S3_ENDPOINT: "http://garage:3900"
+      IMGPROXY_S3_REGION: "ap-south-1"
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-GK000000000000000000000000}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+      IMGPROXY_ENABLE_AVIF_DETECTION: "true"
+      IMGPROXY_MAX_SRC_RESOLUTION: "50"
+
+  directus:
+    image: ${DIRECTUS_IMAGE:-directus/directus:12}
+    container_name: aparajeyo-food-directus
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    ports:
+      - "${FOOD_DIRECTUS_PORT:-8055}:8055"
+    environment:
+      SECRET: ${DIRECTUS_SECRET:-aparajeyo-food-directus-dev-secret-key-2026}
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:-admin@aparajeyo.local}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:-aparajeyo-food-admin}
+      DB_CLIENT: pg
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-aparajeyo_food}
+      DB_USER: ${POSTGRES_USER:-food}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-food}
+      CACHE_ENABLED: "true"
+      CACHE_STORE: redis
+      REDIS: "redis://valkey:6379"
+      WEBSOCKETS_ENABLED: "false"
+
+volumes:
+  food_pgdata:
+  food_garage_meta:
+  food_garage_data:

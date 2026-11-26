@@ -1,0 +1,13 @@
+{
+  "name": "aparajeyo-food-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@hono/zod-validator": "^0.7.6",
+    "hono": "^4.12.9",
+    "ioredis": "^5.10.0",
+    "postgres": "^3.4.8",
+    "zod": "^4.3.6"
+  }
+}
