@@ -1,0 +1,29 @@
+[
+  {
+    "key_hex": "0101010101010101010101010101010101010101010101010101010101010101",
+    "salt_hex": "0202020202020202020202020202020202020202020202020202020202020202",
+    "base_url": "https://img.example.test",
+    "bucket": "food-media",
+    "s3_key": "photos/food/6f1d2c3a-8b4e-4f5a-9c7d-1e2f3a4b5c6d/ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12.jpg",
+    "width": 320,
+    "expected_url": "https://img.example.test/9xzlycv6JtLyxOsYh3JJj1ttW8g6WrFwffkBUDdDv9U/rs:fit:320:0/plain/s3://food-media/photos/food/6f1d2c3a-8b4e-4f5a-9c7d-1e2f3a4b5c6d/ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12.jpg"
+  },
+  {
+    "key_hex": "a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2",
+    "salt_hex": "c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4",
+    "base_url": "https://img.example.test",
+    "bucket": "food-media",
+    "s3_key": "photos/food/6f1d2c3a-8b4e-4f5a-9c7d-1e2f3a4b5c6d/ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12.jpg",
+    "width": 1280,
+    "expected_url": "https://img.example.test/0rtK-QdcOQCPBldoMDZlYEaOja05aCzbAozfvUKnMDo/rs:fit:1280:0/plain/s3://food-media/photos/food/6f1d2c3a-8b4e-4f5a-9c7d-1e2f3a4b5c6d/ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12.jpg"
+  },
+  {
+    "key_hex": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+    "salt_hex": "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0",
+    "base_url": "https://img.example.test",
+    "bucket": "food-media",
+    "s3_key": "photos/food/0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d/cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34.png",
+    "width": 320,
+    "expected_url": "https://img.example.test/i-9RgpNlCqdw-UfZ9cMa34JZW7PhBS0UyQ-K_a4i1mI/rs:fit:320:0/plain/s3://food-media/photos/food/0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d/cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34cd34.png"
+  }
+]

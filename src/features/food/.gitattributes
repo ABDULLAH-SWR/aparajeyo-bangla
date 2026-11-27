@@ -2,3 +2,4 @@
 *.sh text eol=lf
 # dbmate migrations stay LF on every checkout.
 *.sql text eol=lf
+data/geo_codes.v03.json* -text
