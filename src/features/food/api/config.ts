@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
+import { parseJson } from "./json";
 
 export class ConfigError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -25,8 +26,9 @@ export function loadDistrictIds(path: string): ReadonlySet<string> {
     if (createHash("sha256").update(bytes).digest("hex") !== expected) {
       throw new Error("sha256 differs from data/geo_codes.v03.json.sha256");
     }
-    const { districts } = GeoCodesSchema.parse(JSON.parse(bytes.toString("utf8")));
-    return new Set(districts.map((d) => d.id));
+    const parsed = parseJson(bytes.toString("utf8"), GeoCodesSchema);
+    if (!parsed.ok) throw parsed.error;
+    return new Set(parsed.value.districts.map((d) => d.id));
   } catch (cause) {
     throw new ConfigError(`invalid configuration\n  GEO_CODES_PATH: ${(cause as Error).message}`, { cause });
   }

@@ -5,7 +5,7 @@ import type { Logger } from "./logger";
 import type { FoodRepository } from "./repository";
 import type { ValkeyCache } from "./valkey";
 
-export const HealthResponseSchema = z.object({
+const HealthResponseSchema = z.object({
   /** "down" when the API cannot serve. A missing cache only degrades it. */
   status: z.enum(["ok", "down"]),
   db: z.enum(["ok", "down"]),

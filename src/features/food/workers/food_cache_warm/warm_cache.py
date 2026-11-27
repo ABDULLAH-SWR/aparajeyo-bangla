@@ -13,7 +13,7 @@ from pathlib import Path
 import valkey
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from shared.db import get_pg_connection, get_valkey_url, today_bst_date  # noqa: E402
+from shared.db import get_pg_connection, get_valkey_url, today_bst_date
 
 
 def sign_imgproxy_url(s3_key: str, width: int) -> str | None:
@@ -26,7 +26,7 @@ def sign_imgproxy_url(s3_key: str, width: int) -> str | None:
     try:
         key = bytes.fromhex(key_hex)
         salt = bytes.fromhex(salt_hex)
-        path = f"/rs:fit:{width}:0/plain/s3://{bucket}/{s3_key}".encode("utf-8")
+        path = f"/rs:fit:{width}:0/plain/s3://{bucket}/{s3_key}".encode()
         sig = base64.urlsafe_b64encode(hmac.new(key, salt + path, hashlib.sha256).digest()).rstrip(b"=").decode("ascii")
         return f"{base_url}/{sig}{path.decode('utf-8')}"
     except Exception:

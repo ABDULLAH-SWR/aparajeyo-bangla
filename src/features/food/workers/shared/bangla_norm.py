@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+
 from normalizer import normalize as buet_normalize
 
 BENGALI_BLOCK_RE = re.compile(r"[\u0980-\u09FF]")

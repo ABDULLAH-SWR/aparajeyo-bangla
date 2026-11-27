@@ -12,7 +12,7 @@ from pathlib import Path
 import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from shared.db import get_pg_connection, now_bst_iso  # noqa: E402
+from shared.db import get_pg_connection, now_bst_iso
 
 YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
 ISO_DUR_RE = re.compile(r"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$")

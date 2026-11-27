@@ -1,6 +1,7 @@
 // SQL only (Guide Appendix A.12). Rows are mapped to DTOs in mappers.ts.
 // Baseline identifiers differ from the appendix: geo tables are keyed by `id`, and sync_runs has
 // no `job` column (the POI importer is its only writer).
+import type { FoodCategory, FoodCuisine, FoodPhotoSource, PlaceSource } from "../types";
 import type { PgPool } from "./db";
 import type { TileRange } from "./tiles";
 
@@ -14,14 +15,15 @@ export interface PinFilters {
   has_video?: boolean;
 }
 
+// Enum columns carry the contract types: the CHECK constraints in db/migrations enforce them.
 export interface PinRow {
   id: string;
   district_id: string;
   upazila_id: string | null;
   name_en: string | null;
   name_bn: string | null;
-  category: string;
-  source: string;
+  category: FoodCategory;
+  source: PlaceSource;
   lng: number;
   lat: number;
   has_video: boolean;
@@ -45,10 +47,10 @@ export interface PlaceRow {
   lat: number;
   name_en: string | null;
   name_bn: string | null;
-  category: string;
-  cuisines: string[];
+  category: FoodCategory;
+  cuisines: FoodCuisine[];
   tags: Record<string, unknown>;
-  source: string;
+  source: PlaceSource;
   source_id: string;
   source_license: string;
   youtube_video_ids: string[];
@@ -59,7 +61,7 @@ export interface PhotoRow {
   s3_key: string;
   width: number;
   height: number;
-  source: string;
+  source: FoodPhotoSource;
   author: string;
   license: string;
   license_url: string;

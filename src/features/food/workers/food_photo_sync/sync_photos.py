@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
 import sys
@@ -14,12 +15,14 @@ import boto3
 import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from food_photo_sync.license import is_allowed_license  # noqa: E402
-from shared.db import get_pg_connection  # noqa: E402
+from food_photo_sync.license import is_allowed_license
+from shared.db import get_pg_connection
 
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
 USER_AGENT = "AparajeyoFoodSync/0.1 (https://aparajeyo.com)"
+
+log = logging.getLogger(__name__)
 
 
 def extract_commons_title(tags: dict) -> str | None:
@@ -144,6 +147,7 @@ def sync_photos(limit: int = 100) -> dict:
     synced = 0
     uploaded_s3 = 0
     skipped = 0
+    errors = 0
 
     with httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=20.0, follow_redirects=True) as client:
         for row in rows:
@@ -154,6 +158,8 @@ def sync_photos(limit: int = 100) -> dict:
                 try:
                     title = resolve_wikidata_p18(client, tags["wikidata"].strip())
                 except Exception:
+                    log.warning("wikidata P18 lookup failed for place %s", place_id, exc_info=True)
+                    errors += 1
                     title = None
             if not title:
                 skipped += 1
@@ -162,6 +168,8 @@ def sync_photos(limit: int = 100) -> dict:
             try:
                 meta = fetch_commons_photo(client, title)
             except Exception:
+                log.warning("commons fetch failed for place %s", place_id, exc_info=True)
+                errors += 1
                 skipped += 1
                 continue
 
@@ -209,7 +217,13 @@ def sync_photos(limit: int = 100) -> dict:
 
     conn.commit()
     conn.close()
-    return {"checked": len(rows), "synced": synced, "uploaded_s3": uploaded_s3, "skipped": skipped}
+    return {
+        "checked": len(rows),
+        "synced": synced,
+        "uploaded_s3": uploaded_s3,
+        "skipped": skipped,
+        "errors": errors,
+    }
 
 
 if __name__ == "__main__":

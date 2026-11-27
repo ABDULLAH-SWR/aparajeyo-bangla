@@ -9,7 +9,7 @@ import { createMetrics } from "../../metrics";
 import { createFoodRepository } from "../../repository";
 import { createValkeyCache } from "../../valkey";
 
-export interface LogEntry {
+interface LogEntry {
   level: "warn" | "error";
   context: Record<string, unknown>;
   message: string;
@@ -22,7 +22,7 @@ const districtIds = loadDistrictIds(
 );
 
 /** Cache tests pass a real Valkey. Everything else runs with the cache unreachable. */
-export const CLOSED_VALKEY_URL = "redis://127.0.0.1:1/0";
+const CLOSED_VALKEY_URL = "redis://127.0.0.1:1/0";
 
 export interface TestAppOptions {
   databaseUrl: string;

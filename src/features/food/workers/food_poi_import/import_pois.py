@@ -27,13 +27,12 @@ from shapely import wkb
 from shapely.geometry import MultiPolygon, Polygon, shape
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from shared.bangla_norm import (  # noqa: E402
-    normalize_bangla,
+from shared.bangla_norm import (
     normalize_match_key,
     resolve_bilingual_names,
     transliterate_bn_for_matching,
 )
-from shared.db import (  # noqa: E402
+from shared.db import (
     DATA_DIR,
     get_database_url,
     get_pg_connection,

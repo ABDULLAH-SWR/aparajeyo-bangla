@@ -55,18 +55,6 @@ tea_keywords:
   - tong
   - টং
 
-sweet_keywords:
-  - sweet
-  - sweets
-  - mishti
-  - misti
-  - doi
-  - roshogolla
-  - chomchom
-  - মিষ্টি
-  - দই
-  - বেকারি
-
 cuisine_keywords:
   bangladeshi: [bangladeshi, bengali, deshi, bhorta, bhuna, বাংলাদেশি, বাঙালি]
   biryani_kacchi: [biryani, biriyani, kacchi, tehari, morog_polao, বিরিয়ানি, কাচ্চি, তেহারি]

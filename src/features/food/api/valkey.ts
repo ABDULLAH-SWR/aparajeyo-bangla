@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import Redis from "ioredis";
 import type { z } from "zod";
 import type { Clock } from "./clock";
+import { parseJson } from "./json";
 import type { Logger } from "./logger";
 import type { Metrics } from "./metrics";
 import type { PinScope } from "./repository";
@@ -10,7 +11,7 @@ import type { PinScope } from "./repository";
 const EPOCH_KEY = "food:epoch";
 const EPOCH_MEMO_MS = 5000;
 
-type Operation = "connect" | "get" | "set" | "incr";
+type Operation = "connect" | "get" | "set" | "incr" | "parse";
 
 export function filterHash(filters: { category?: readonly string[]; has_video?: boolean }): string {
   const canonical = JSON.stringify({
@@ -73,24 +74,40 @@ export function createValkeyCache(url: string, deps: { logger: Logger; metrics: 
     }
   }
 
-  function parse<T extends z.ZodType>(key: string, raw: string, schema: T): { value: z.output<T> } | null {
-    try {
-      return { value: schema.parse(JSON.parse(raw)) };
-    } catch (err) {
-      deps.logger.warn({ err, key }, "unreadable cache entry");
-      return null;
-    }
+  function readEntry<T extends z.ZodType>(key: string, raw: string, schema: T): { value: z.output<T> } | null {
+    const parsed = parseJson(raw, schema);
+    if (parsed.ok) return parsed;
+    deps.metrics.increment("food_api_valkey_errors_total", { op: "parse" });
+    deps.logger.warn({ err: parsed.error, key }, "unreadable cache entry");
+    return null;
   }
 
-  /** Always returns `schema.parse` output, so a hit and a miss serialize identically. A null is not stored. */
-  async function cachedNullable<T extends z.ZodType>(
+  type Cached<V> = Promise<{ value: V; hit: boolean }>;
+
+  /**
+   * Always returns `schema.parse` output, so a hit and a miss serialize identically. A null is not stored,
+   * and only a producer that can yield null makes the value nullable.
+   */
+  function cached<T extends z.ZodType>(
+    key: string,
+    ttlSeconds: number,
+    schema: T,
+    produce: () => Promise<NonNullable<unknown>>,
+  ): Cached<z.output<T>>;
+  function cached<T extends z.ZodType>(
     key: string,
     ttlSeconds: number,
     schema: T,
     produce: () => Promise<unknown>,
-  ): Promise<{ value: z.output<T> | null; hit: boolean }> {
+  ): Cached<z.output<T> | null>;
+  async function cached<T extends z.ZodType>(
+    key: string,
+    ttlSeconds: number,
+    schema: T,
+    produce: () => Promise<unknown>,
+  ): Cached<z.output<T> | null> {
     const raw = await attempt("get", () => redis.get(key));
-    const stored = typeof raw === "string" ? parse(key, raw, schema) : null;
+    const stored = typeof raw === "string" ? readEntry(key, raw, schema) : null;
     if (stored) return { value: stored.value, hit: true };
 
     const produced = await produce();
@@ -103,17 +120,7 @@ export function createValkeyCache(url: string, deps: { logger: Logger; metrics: 
   let memo: { epoch: number; readAt: number } | null = null;
 
   return {
-    cachedNullable,
-
-    async cached<T extends z.ZodType>(
-      key: string,
-      ttlSeconds: number,
-      schema: T,
-      produce: () => Promise<NonNullable<unknown>>,
-    ): Promise<{ value: z.output<T>; hit: boolean }> {
-      const result = await cachedNullable(key, ttlSeconds, schema, produce);
-      return { value: result.value as z.output<T>, hit: result.hit };
-    },
+    cached,
 
     /** Memoized in process for at most 5 s: the server-side staleness bound after a bump. */
     async epoch(): Promise<number> {

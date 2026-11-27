@@ -9,8 +9,8 @@ from difflib import SequenceMatcher
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from shared.bangla_norm import normalize_match_key, transliterate_bn_for_matching  # noqa: E402
-from shared.db import get_pg_connection, load_geo_codes  # noqa: E402
+from shared.bangla_norm import normalize_match_key, transliterate_bn_for_matching
+from shared.db import get_pg_connection, load_geo_codes
 
 CHAPTER_RE = re.compile(r"^\s*(?:(\d+):)?(\d{1,2}):(\d{2})\s+[-–|:]?\s*(.+)$", re.MULTILINE)
 

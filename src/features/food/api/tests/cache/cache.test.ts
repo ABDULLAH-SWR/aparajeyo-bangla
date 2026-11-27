@@ -68,6 +68,7 @@ test("c3 a corrupt entry is a miss and is overwritten", async () => {
 
   expect(await getPins()).toMatchObject({ xCache: "MISS", name: "New Name" });
   expect(JSON.parse((await valkey.client.get(key!))!)).toMatchObject({ type: "FeatureCollection" });
+  expect(t.metrics.read("food_api_valkey_errors_total", { op: "parse" })).toBe(1);
 });
 
 test("c4 with Valkey down, the database serves and every error is logged and counted", async () => {

@@ -11,7 +11,7 @@ import { join, resolve } from "node:path";
 import postgres from "postgres";
 
 export const FOOD_ROOT = resolve(import.meta.dir, "../../..");
-export const MIGRATIONS_DIR = join(FOOD_ROOT, "db", "migrations");
+const MIGRATIONS_DIR = join(FOOD_ROOT, "db", "migrations");
 export const USE_COMPOSE = process.env.FOOD_TEST_USE_COMPOSE === "1";
 const IMAGE = "postgis/postgis:17-3.5"; // must equal the compose `postgres` image tag
 

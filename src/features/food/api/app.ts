@@ -78,7 +78,7 @@ export function createFoodApp(deps: FoodAppDeps) {
     .get("/api/v1/pins/food/:id", detailParamValidator, async (c) => {
       const { id } = c.req.valid("param");
       const epoch = await deps.cache.epoch();
-      const { value, hit } = await deps.cache.cachedNullable(
+      const { value, hit } = await deps.cache.cached(
         detailKey(epoch, id),
         DETAIL_TTL_SECONDS,
         FoodPinDetailSchema,

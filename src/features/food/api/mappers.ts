@@ -1,20 +1,11 @@
 // Pure row-to-DTO mapping.
-import type {
-  FoodCategory,
-  FoodCuisine,
-  FoodPhoto,
-  FoodPhotoSource,
-  FoodPinDetail,
-  FoodPinFeature,
-  FoodPinsFeatureCollection,
-  PlaceSource,
-} from "../types";
+import type { FoodPhoto, FoodPinDetail, FoodPinFeature, FoodPinsFeatureCollection } from "../types";
 import type { ImgproxySigner } from "./imgproxy";
 import { pinCap, type PhotoRow, type PinRow, type PinScope, type PlaceRow, type VideoRow } from "./repository";
 
 const ATTRIBUTION_TEXT = "© OpenStreetMap contributors, Overture Maps Foundation";
 
-export function formatOsmAddress(tags: Record<string, unknown>): string | null {
+function formatOsmAddress(tags: Record<string, unknown>): string | null {
   if (typeof tags["addr:full"] === "string" && tags["addr:full"].trim()) {
     return tags["addr:full"].trim();
   }
@@ -43,7 +34,7 @@ function toPhoto(row: PhotoRow, signer: ImgproxySigner): FoodPhoto {
     url: signer.sign(row.s3_key, 1280),
     width: row.width,
     height: row.height,
-    source: row.source as FoodPhotoSource,
+    source: row.source,
     credit: {
       author: row.author,
       license: row.license,
@@ -59,8 +50,7 @@ export function toPinDetail(
   videos: VideoRow[],
   signer: ImgproxySigner,
 ): FoodPinDetail {
-  const source = row.source as PlaceSource;
-  const osm = source === "osm";
+  const osm = row.source === "osm";
   return {
     id: row.id,
     pin_type: "food_poi",
@@ -73,8 +63,8 @@ export function toPinDetail(
     coordinates: [row.lng, row.lat],
     name_en: row.name_en,
     name_bn: row.name_bn,
-    category: row.category as FoodCategory,
-    cuisines: row.cuisines as FoodCuisine[],
+    category: row.category,
+    cuisines: row.cuisines,
     description_en: null,
     description_bn: null,
     address_en: formatOsmAddress(row.tags),
@@ -86,12 +76,12 @@ export function toPinDetail(
     // Taken from the hydrated rows, so a match changed between the two queries cannot split them.
     youtube_video_ids: videos.map((v) => v.video_id),
     videos,
-    source,
+    source: row.source,
     source_id: row.source_id,
     osm_attribution: {
       text: osm ? "© OpenStreetMap contributors" : "© Overture Maps Foundation",
       url: osm ? "https://www.openstreetmap.org/copyright" : "https://overturemaps.org/",
-      license: row.source_license || (osm ? "ODbL-1.0" : "CDLA-Permissive-2.0"),
+      license: row.source_license,
     },
     rating: null,
     review_count: null,
@@ -99,7 +89,7 @@ export function toPinDetail(
   };
 }
 
-export function toPinFeature(row: PinRow, signer: ImgproxySigner): FoodPinFeature {
+function toPinFeature(row: PinRow, signer: ImgproxySigner): FoodPinFeature {
   return {
     type: "Feature",
     id: row.id,
@@ -111,10 +101,10 @@ export function toPinFeature(row: PinRow, signer: ImgproxySigner): FoodPinFeatur
       upazila_id: row.upazila_id,
       name_en: row.name_en,
       name_bn: row.name_bn,
-      category: row.category as FoodCategory,
+      category: row.category,
       has_video: row.has_video,
       thumbnail_url: row.thumb_s3_key === null ? null : signer.sign(row.thumb_s3_key, 320),
-      source: row.source as PlaceSource,
+      source: row.source,
     },
   };
 }

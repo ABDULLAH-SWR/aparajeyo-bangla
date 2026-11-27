@@ -56,3 +56,20 @@ def test_sync_leaves_the_derived_key_array_to_the_database(food_db, fake_commons
     keys = food_db.conn.execute("SELECT wikimedia_s3_keys AS keys FROM places").fetchone()["keys"]
     assert len(keys) == 2
     assert older in keys
+
+
+def test_a_failed_wikimedia_call_is_logged_and_counted(food_db, fake_commons, monkeypatch, caplog):
+    def broken(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500)
+
+    monkeypatch.setitem(globals(), "commons", broken)
+    food_db.migrate()
+    food_db.seed_geo()
+    food_db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example.jpg"}))
+    food_db.insert_place(tags=Jsonb({"wikidata": "Q1"}))
+
+    result = sync_photos()
+
+    assert result["skipped"] == 2
+    assert result["errors"] == 2
+    assert len([r for r in caplog.records if r.levelname == "WARNING" and r.exc_info]) == 2
