@@ -5,6 +5,7 @@ import type { z } from "zod";
 import type { Clock } from "./clock";
 import type { Logger } from "./logger";
 import type { Metrics } from "./metrics";
+import type { PinScope } from "./repository";
 
 const EPOCH_KEY = "food:epoch";
 const EPOCH_MEMO_MS = 5000;
@@ -19,13 +20,21 @@ export function filterHash(filters: { category?: readonly string[]; has_video?: 
   return crypto.createHash("sha1").update(canonical).digest("hex").slice(0, 12);
 }
 
+/** `featured` | `d:{ADM2}` | `t:12:{x0}-{x1}:{y0}-{y1}` */
+function scopeSegment(scope: PinScope): string {
+  if (scope.kind === "district") return `d:${scope.id}`;
+  if (scope.kind === "featured") return "featured";
+  const { x0, x1, y0, y1 } = scope.tiles;
+  return `t:12:${x0}-${x1}:${y0}-${y1}`;
+}
+
 export function pinsKey(parts: {
-  datasetVersion: string | null;
+  datasetVersion: string;
   epoch: number;
-  scope: string;
+  scope: PinScope;
   filterHash: string;
 }): string {
-  return `food:v2:pins:${parts.datasetVersion}:${parts.epoch}:${parts.scope}:${parts.filterHash}`;
+  return `food:v2:pins:${parts.datasetVersion}:${parts.epoch}:${scopeSegment(parts.scope)}:${parts.filterHash}`;
 }
 
 export const detailKey = (epoch: number, id: string) => `food:v2:detail:${epoch}:${id}`;
@@ -113,6 +122,12 @@ export function createValkeyCache(url: string, deps: { logger: Logger; metrics: 
       const raw = await attempt("get", () => redis.get(EPOCH_KEY));
       if (raw !== undefined) memo = { epoch: Number(raw ?? 0), readAt: now };
       return memo?.epoch ?? 0;
+    },
+
+    /** The stored epoch, bypassing the memo, or null when Valkey cannot be read. */
+    async readEpoch(): Promise<number | null> {
+      const raw = await attempt("get", () => redis.get(EPOCH_KEY));
+      return raw === undefined ? null : Number(raw ?? 0);
     },
 
     /** Throws on failure: a writer must know that its change was not published. */

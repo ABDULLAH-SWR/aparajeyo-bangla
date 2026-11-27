@@ -2,11 +2,12 @@
 // Baseline identifiers differ from the appendix: geo tables are keyed by `id`, and sync_runs has
 // no `job` column (the POI importer is its only writer).
 import type { PgPool } from "./db";
+import type { TileRange } from "./tiles";
 
 export type PinScope =
   | { kind: "district"; id: string }
-  | { kind: "bbox"; bbox: readonly [number, number, number, number] }
-  | { kind: "national" };
+  | { kind: "bbox"; tiles: TileRange }
+  | { kind: "featured" };
 
 export interface PinFilters {
   category?: readonly string[];
@@ -27,10 +28,10 @@ export interface PinRow {
   thumb_s3_key: string | null;
 }
 
-const NATIONAL_CAP = 2000;
+const FEATURED_CAP = 2000;
 const SCOPED_CAP = 5000;
 
-export const pinCap = (scope: PinScope) => (scope.kind === "national" ? NATIONAL_CAP : SCOPED_CAP);
+export const pinCap = (scope: PinScope) => (scope.kind === "featured" ? FEATURED_CAP : SCOPED_CAP);
 
 export interface PlaceRow {
   id: string;
@@ -81,36 +82,39 @@ export function createFoodRepository(sql: PgPool) {
   function scopeFragment(scope: PinScope) {
     if (scope.kind === "district") return sql`AND p.district_id = ${scope.id}`;
     if (scope.kind === "bbox") {
-      const [x0, y0, x1, y1] = scope.bbox;
-      return sql`AND p.eff_geom && ST_MakeEnvelope(${x0}, ${y0}, ${x1}, ${y1}, 4326)`;
+      const [west, south, east, north] = scope.tiles.envelope;
+      return sql`AND p.eff_geom && ST_MakeEnvelope(${west}, ${south}, ${east}, ${north}, 4326)`;
     }
-    return sql``;
+    // Must imply the predicate of the partial index places_food_featured_ix.
+    return sql`AND (p.is_featured OR cardinality(p.youtube_video_ids) > 0)`;
+  }
+
+  /** The BST calendar date of the latest successful import, or null when there is none. Not memoized. */
+  async function readDatasetVersion(): Promise<string | null> {
+    // 'ok' is what the current importer writes.
+    const [row] = await sql<{ dataset_version: string | null }[]>`
+      SELECT to_char(max(finished_at) AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS dataset_version
+      FROM sync_runs
+      WHERE status IN ('succeeded', 'ok')`;
+    return row?.dataset_version ?? null;
   }
 
   return {
-    /** The BST calendar date of the latest successful import, or null when there is none. */
+    readDatasetVersion,
+
+    /** `readDatasetVersion`, memoized per epoch value. */
     async getDatasetVersion(epoch: number): Promise<string | null> {
       if (datasetMemo?.epoch === epoch) return datasetMemo.value;
-      // 'ok' is what the current importer writes.
-      const [row] = await sql<{ dataset_version: string | null }[]>`
-        SELECT to_char(max(finished_at) AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS dataset_version
-        FROM sync_runs
-        WHERE status IN ('succeeded', 'ok')`;
-      const value = row?.dataset_version ?? null;
+      const value = await readDatasetVersion();
       if (value !== null) datasetMemo = { epoch, value };
       return value;
     },
 
     /** Returns up to cap + 1 rows so the caller can detect truncation. */
     async findPins(scope: PinScope, filters: PinFilters = {}): Promise<PinRow[]> {
-      // The national ordering is replaced by the featured set in Slice 0C.10.
       const order =
-        scope.kind === "national"
-          ? sql`(cardinality(p.youtube_video_ids) > 0) DESC,
-                (jsonb_array_length(p.wikimedia_s3_keys) > 0) DESC,
-                p.is_featured DESC,
-                (p.eff_name_bn IS NOT NULL AND p.eff_name_en IS NOT NULL) DESC,
-                p.updated_at DESC, p.id`
+        scope.kind === "featured"
+          ? sql`p.is_featured DESC, cardinality(p.youtube_video_ids) DESC, p.eff_name_en NULLS LAST, p.id`
           : sql`p.eff_name_en NULLS LAST, p.eff_name_bn NULLS LAST, p.id`;
       return await sql<PinRow[]>`
         SELECT p.id, p.district_id, p.upazila_id,
@@ -126,28 +130,6 @@ export function createFoodRepository(sql: PgPool) {
           ${filters.has_video ? sql`AND cardinality(p.youtube_video_ids) > 0` : sql``}
         ORDER BY ${order}
         LIMIT ${pinCap(scope) + 1}`;
-    },
-
-    async getHealth() {
-      const [stats] = await sql<{ total_places: number; active_places: number; districts_covered: number }[]>`
-        SELECT COUNT(*)::int AS total_places,
-               COUNT(*) FILTER (WHERE is_active AND NOT is_hidden)::int AS active_places,
-               COUNT(DISTINCT district_id) FILTER (WHERE is_active AND NOT is_hidden)::int AS districts_covered
-        FROM places WHERE overlay_type = 'food'`;
-      const [media] = await sql<{ total_photos: number; total_videos: number }[]>`
-        SELECT (SELECT COUNT(*)::int FROM place_photos) AS total_photos,
-               (SELECT COUNT(*)::int FROM video_place_matches
-                WHERE status IN ('auto_approved', 'approved')) AS total_videos`;
-      const [lastRun] = await sql<{ dataset_version: string; last_sync_at: string }[]>`
-        SELECT dataset_version,
-               to_char(finished_at AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD"T"HH24:MI:SS"+06:00"') AS last_sync_at
-        FROM sync_runs ORDER BY id DESC LIMIT 1`;
-      return {
-        ...stats!,
-        ...media!,
-        dataset_version: lastRun?.dataset_version ?? null,
-        last_sync_at: lastRun?.last_sync_at ?? null,
-      };
     },
 
     async findDetail(id: string): Promise<{ place: PlaceRow; photos: PhotoRow[]; videos: VideoRow[] } | null> {

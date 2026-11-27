@@ -2,7 +2,7 @@
 import Redis from "ioredis";
 import { inject } from "vitest";
 
-export async function createFileValkey(index: 13 | 14 | 15) {
+export async function createFileValkey(index: 11 | 12 | 13 | 14 | 15) {
   const url = new URL(inject("valkeyUrl"));
   url.pathname = `/${index}`;
   const client = new Redis(url.toString());

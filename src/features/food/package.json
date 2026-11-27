@@ -2,6 +2,8 @@
   "name": "aparajeyo-food",
   "private": true,
   "scripts": {
+    "dev:up": "bash scripts/dev-up.sh",
+    "dev": "bun api/server.ts",
     "test:scripts": "bash scripts/tests/check-secrets.test.sh"
   }
 }

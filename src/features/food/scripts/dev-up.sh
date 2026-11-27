@@ -1,7 +1,22 @@
 #!/usr/bin/env bash
-# Starts the local Food stack. Generates .env.local with random secrets when it is absent.
+# Starts the local Food stack: `bun run dev:up`. Generates .env.local with random secrets when it is
+# absent, and adds any non-secret dev setting that neither .env file defines.
+# On Windows the stack runs in WSL, and this script then stays in the foreground to keep the WSL VM
+# awake. Ctrl+C releases it; the containers are not stopped.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+wsl_distro=${FOOD_WSL_DISTRO:-Ubuntu}
+
+# Git Bash with Docker only inside WSL: run this script there, then hold the VM open from here.
+if ! command -v docker >/dev/null 2>&1 && command -v wsl.exe >/dev/null 2>&1; then
+  windows_dir=$(pwd -W) # C:/dev/...
+  drive=${windows_dir:0:1}
+  MSYS_NO_PATHCONV=1 wsl.exe -d "$wsl_distro" -- env FOOD_DEV_KEEPALIVE=0 \
+    bash -c 'cd "$1" && shift && exec bash scripts/dev-up.sh "$@"' dev-up "/mnt/${drive,,}${windows_dir:2}" "$@"
+  echo "dev-up: keeping WSL awake; press Ctrl+C to release" >&2
+  MSYS_NO_PATHCONV=1 exec wsl.exe -d "$wsl_distro" -- sleep infinity
+fi
 
 if [[ ! -f .env.local ]]; then
   command -v openssl >/dev/null || { echo "dev-up: openssl is required" >&2; exit 1; }
@@ -38,6 +53,20 @@ if [[ ! -f .env.local ]]; then
   echo "dev-up: an existing Postgres volume keeps its old password until you run ALTER USER." >&2
 fi
 
+# Non-secret settings the API requires (Guide Appendix E). An existing value is never changed.
+ensure_setting() {
+  grep -qs "^$1=" .env .env.local && return 0
+  [[ -z "$(tail -c1 .env.local)" ]] || echo >> .env.local
+  echo "$1=$2" >> .env.local
+  echo "dev-up: added $1 to .env.local" >&2
+}
+ensure_setting NODE_ENV development
+ensure_setting VALKEY_URL redis://127.0.0.1:6382/0
+ensure_setting IMGPROXY_BASE_URL http://127.0.0.1:8081
+ensure_setting CORS_ALLOWED_ORIGINS http://localhost:3000
+ensure_setting FOOD_INTERNAL_BIND_ADDR 127.0.0.1
+ensure_setting GEO_CODES_PATH data/geo_codes.v03.json
+
 # .env holds optional non-secret settings; .env.local is read last, so it wins.
 env_files=()
 [[ -f .env ]] && env_files+=(--env-file .env)
@@ -46,4 +75,10 @@ env_files+=(--env-file .env.local)
 # A new volume starts empty. Migrations and role logins are explicit steps.
 echo "dev-up: then run dbmate up (as DATABASE_URL_OWNER) and scripts/db-bootstrap-roles.sh" >&2
 
-exec docker compose "${env_files[@]}" up -d "$@"
+docker compose "${env_files[@]}" up -d "$@"
+
+# Started from Windows through the WSL `bash` launcher: the VM stops when its last process exits.
+if [[ -n "${WSL_DISTRO_NAME:-}" && "${FOOD_DEV_KEEPALIVE:-1}" == 1 ]]; then
+  echo "dev-up: keeping WSL awake; press Ctrl+C to release" >&2
+  exec sleep infinity
+fi

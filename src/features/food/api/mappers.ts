@@ -121,7 +121,7 @@ export function toPinFeature(row: PinRow, signer: ImgproxySigner): FoodPinFeatur
 
 export function toCollection(
   rows: PinRow[],
-  context: { scope: PinScope; datasetVersion: string | null; signer: ImgproxySigner },
+  context: { scope: PinScope; datasetVersion: string; signer: ImgproxySigner },
 ): FoodPinsFeatureCollection {
   const cap = pinCap(context.scope);
   const truncated = rows.length > cap;
@@ -133,8 +133,7 @@ export function toCollection(
       district_id: context.scope.kind === "district" ? context.scope.id : null,
       total_count: features.length,
       truncated,
-      // A null version fails the response schema: there is no clock fallback.
-      dataset_version: context.datasetVersion as string,
+      dataset_version: context.datasetVersion,
       attribution_text: ATTRIBUTION_TEXT,
     },
     features,
