@@ -15,7 +15,7 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from food_photo_sync.license import is_allowed_license  # noqa: E402
-from shared.db import get_pg_connection, now_bst_iso  # noqa: E402
+from shared.db import get_pg_connection  # noqa: E402
 
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
@@ -186,7 +186,7 @@ def sync_photos(limit: int = 100) -> dict:
                       place_id, s3_key, sha256, source, commons_title,
                       author, license, license_url, source_page_url, width, height, sort_order
                     ) VALUES (%s::uuid, %s, %s, 'wikimedia', %s, %s, %s, %s, %s, %s, %s, 0)
-                    ON CONFLICT (sha256) DO UPDATE SET
+                    ON CONFLICT (place_id, sha256) DO UPDATE SET
                       author = EXCLUDED.author,
                       license = EXCLUDED.license,
                       license_url = EXCLUDED.license_url,
@@ -204,10 +204,6 @@ def sync_photos(limit: int = 100) -> dict:
                         meta["width"],
                         meta["height"],
                     ),
-                )
-                cur.execute(
-                    "UPDATE places SET wikimedia_s3_keys = %s::jsonb, updated_at = %s WHERE id = %s::uuid",
-                    (json.dumps([s3_key]), now_bst_iso(), place_id),
                 )
             synced += 1
 

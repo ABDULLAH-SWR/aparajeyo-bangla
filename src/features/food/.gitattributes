@@ -1,2 +1,4 @@
 # Shell scripts run under bash/WSL, which rejects CRLF.
 *.sh text eol=lf
+# dbmate migrations stay LF on every checkout.
+*.sql text eol=lf

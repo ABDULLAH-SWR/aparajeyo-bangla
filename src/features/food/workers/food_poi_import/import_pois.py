@@ -35,7 +35,6 @@ from shared.bangla_norm import (  # noqa: E402
 )
 from shared.db import (  # noqa: E402
     DATA_DIR,
-    ensure_schema,
     get_database_url,
     get_pg_connection,
     load_geo_codes,
@@ -305,21 +304,27 @@ def ingest_osm_from_staging(conn, cmap: dict) -> tuple[int, set[str]]:
         # Resolve district & upazila directly in PostGIS (exact covers -> 2km snap)
         cur.execute(
             """
+            WITH located AS (
+              SELECT
+                s.*,
+                COALESCE(
+                  (SELECT d.id FROM geo_districts d WHERE ST_Covers(d.geom, s.geom) LIMIT 1),
+                  (SELECT d.id FROM geo_districts d WHERE ST_DWithin(d.geom::geography, s.geom::geography, 2000) ORDER BY ST_Distance(d.geom::geography, s.geom::geography) LIMIT 1)
+                ) AS district_id
+              FROM osm_food_staging s
+            )
             SELECT
               s.osm_type,
               s.osm_id,
               s.tags,
               ST_X(s.geom) AS lng,
               ST_Y(s.geom) AS lat,
+              s.district_id,
               COALESCE(
-                (SELECT d.id FROM geo_districts d WHERE ST_Covers(d.geom, s.geom) LIMIT 1),
-                (SELECT d.id FROM geo_districts d WHERE ST_DWithin(d.geom::geography, s.geom::geography, 2000) ORDER BY ST_Distance(d.geom::geography, s.geom::geography) LIMIT 1)
-              ) AS district_id,
-              COALESCE(
-                (SELECT u.id FROM geo_upazilas u WHERE ST_Covers(u.geom, s.geom) LIMIT 1),
-                (SELECT u.id FROM geo_upazilas u WHERE ST_DWithin(u.geom::geography, s.geom::geography, 2000) ORDER BY ST_Distance(u.geom::geography, s.geom::geography) LIMIT 1)
+                (SELECT u.id FROM geo_upazilas u WHERE u.district_id = s.district_id AND ST_Covers(u.geom, s.geom) LIMIT 1),
+                (SELECT u.id FROM geo_upazilas u WHERE u.district_id = s.district_id AND ST_DWithin(u.geom::geography, s.geom::geography, 2000) ORDER BY ST_Distance(u.geom::geography, s.geom::geography) LIMIT 1)
               ) AS upazila_id
-            FROM osm_food_staging s
+            FROM located s
             """
         )
         rows = cur.fetchall()
@@ -681,7 +686,7 @@ def ingest_overture(conn, cmap: dict, min_confidence: float = 0.6, use_cache: bo
               tags = EXCLUDED.tags,
               source_license = EXCLUDED.source_license,
               source_confidence = EXCLUDED.source_confidence,
-              is_active = true,
+              is_active = places.merged_into IS NULL,
               missed_imports = 0,
               last_seen_at = EXCLUDED.last_seen_at,
               updated_at = EXCLUDED.updated_at
@@ -780,10 +785,32 @@ def conflate_osm_and_overture(conn) -> dict:
     return {"auto_merged": auto_merged, "review_queued": queued}
 
 
+def backfill_merged_into(conn) -> int:
+    """Recomputes survivor -> loser pairs from merged_source_ids (Slice 0B.8)."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE places loser
+            SET merged_into = pair.survivor_id, is_active = false, updated_at = now()
+            FROM (
+              SELECT DISTINCT ON (member.source_id) member.source_id, s.id AS survivor_id
+              FROM places s
+              CROSS JOIN LATERAL jsonb_array_elements_text(s.merged_source_ids) AS member (source_id)
+              WHERE s.overlay_type = 'food' AND s.source = 'osm'
+              ORDER BY member.source_id, s.is_active DESC, s.updated_at DESC, s.id
+            ) pair
+            WHERE loser.source = 'overture' AND loser.source_id = pair.source_id
+              AND loser.merged_into IS NULL
+            """
+        )
+        updated = cur.rowcount
+    conn.commit()
+    return updated
+
+
 def run_import(skip_download: bool = False, skip_overture: bool = False) -> dict:
     started_at = now_bst_iso()
     conn = get_pg_connection()
-    ensure_schema(conn)
     d_cnt, u_cnt = seed_cod_ab_boundaries(conn)
 
     pbf_path = PBF_PATH if (skip_download and PBF_PATH.exists()) else download_pbf_if_needed()
@@ -835,16 +862,22 @@ def run_import(skip_download: bool = False, skip_overture: bool = False) -> dict
     }
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--skip-download", action="store_true")
     parser.add_argument("--skip-overture", action="store_true")
     parser.add_argument("--conflate-only", action="store_true")
+    parser.add_argument("--backfill-merged-into", action="store_true")
     args = parser.parse_args()
     if args.conflate_only:
-        c = get_pg_connection()
-        res = conflate_osm_and_overture(c)
-        c.close()
-        print(json.dumps(res))
+        with get_pg_connection() as conn:
+            print(json.dumps(conflate_osm_and_overture(conn)))
+    elif args.backfill_merged_into:
+        with get_pg_connection() as conn:
+            print(json.dumps({"merged_into_backfilled": backfill_merged_into(conn)}))
     else:
         print(json.dumps(run_import(skip_download=args.skip_download, skip_overture=args.skip_overture)))
+
+
+if __name__ == "__main__":
+    main()

@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from shared.bangla_norm import normalize_match_key, transliterate_bn_for_matching  # noqa: E402
-from shared.db import get_pg_connection, load_geo_codes, now_bst_iso  # noqa: E402
+from shared.db import get_pg_connection, load_geo_codes  # noqa: E402
 
 CHAPTER_RE = re.compile(r"^\s*(?:(\d+):)?(\d{1,2}):(\d{2})\s+[-–|:]?\s*(.+)$", re.MULTILINE)
 
@@ -109,7 +109,6 @@ def run_matching() -> dict:
         })
 
     upserted = 0
-    now_iso = now_bst_iso()
 
     with conn.cursor() as cur:
         for v in videos:
@@ -141,30 +140,16 @@ def run_matching() -> dict:
                     cur.execute(
                         """
                         INSERT INTO video_place_matches (
-                          video_id, place_id, confidence, method, start_seconds, status, reviewed_at
-                        ) VALUES (%s, %s::uuid, %s, %s, %s, %s, %s)
+                          video_id, place_id, confidence, method, start_seconds, status
+                        ) VALUES (%s, %s::uuid, %s, %s, %s, %s)
                         ON CONFLICT (video_id, place_id) DO UPDATE SET
                           confidence = EXCLUDED.confidence,
                           method = EXCLUDED.method,
                           start_seconds = COALESCE(EXCLUDED.start_seconds, video_place_matches.start_seconds)
                         """,
-                        (v["video_id"], matches[0]["place_id"], conf, method, start_sec, status, now_iso),
+                        (v["video_id"], matches[0]["place_id"], conf, method, start_sec, status),
                     )
                     upserted += 1
-
-        # Rebuild places.youtube_video_ids from approved available matches
-        cur.execute(
-            """
-            UPDATE places p
-            SET youtube_video_ids = COALESCE((
-              SELECT array_agg(m.video_id ORDER BY m.confidence DESC)
-              FROM video_place_matches m
-              JOIN youtube_videos v ON v.video_id = m.video_id
-              WHERE m.place_id = p.id AND m.status IN ('auto_approved', 'approved') AND v.is_available
-            ), '{}')
-            WHERE p.overlay_type = 'food'
-            """
-        )
 
     conn.commit()
     conn.close()

@@ -24,3 +24,17 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[project.scripts]
+food-poi-import          = "food_poi_import.import_pois:main"
+food-photo-purge-nonfree = "food_photo_sync.purge:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["food_cache_warm", "food_photo_sync", "food_poi_import", "food_video_match", "food_youtube_index", "shared"]
