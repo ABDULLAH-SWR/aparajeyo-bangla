@@ -8,30 +8,7 @@ export const FOOD_OVERLAY_SPEC = {
   default_local_port: 8002,
 } as const;
 
-export const FOOD_CATEGORIES: readonly FoodCategory[] = [
-  "restaurant",
-  "street_food",
-  "cafe",
-  "tea_stall",
-  "sweets_bakery",
-  "fast_food",
-  "food_court",
-  "dessert",
-  "other",
-] as const;
-
-export const FOOD_CUISINES: readonly FoodCuisine[] = [
-  "bangladeshi",
-  "biryani_kacchi",
-  "fish_seafood",
-  "kebab_grill",
-  "pitha",
-  "mishti",
-  "chinese_thai",
-  "indian",
-  "western",
-  "other",
-] as const;
+export { FOOD_CATEGORIES, FOOD_CUISINES } from "./contract/enums";
 
 export interface FoodCategoryMeta {
   label_en: string;
@@ -39,7 +16,8 @@ export interface FoodCategoryMeta {
   color: string;
 }
 
-export const FOOD_CATEGORY_META: Record<FoodCategory, FoodCategoryMeta> = {
+/** Suggestions only. The Map owns icons, colors and legends (contract §0). */
+export const SUGGESTED_CATEGORY_STYLE: Record<FoodCategory, FoodCategoryMeta> = {
   restaurant: { label_en: "Restaurant", label_bn: "রেস্তোরাঁ", color: "#e54d2e" },
   street_food: { label_en: "Street Food", label_bn: "স্ট্রিট ফুড", color: "#f97316" },
   cafe: { label_en: "Cafe", label_bn: "ক্যাফে", color: "#8b5cf6" },
@@ -70,15 +48,21 @@ export const FOOD_CUISINE_META: Record<FoodCuisine, FoodCuisineMeta> = {
 };
 
 /**
- * Resolves the live Food API base URL.
- * Defaults to `http://localhost:8002` in local development when env vars are unset.
+ * Resolves the live Food API base URL, without a trailing slash.
+ * Production requires `NEXT_PUBLIC_FOOD_API_BASE_URL`. Elsewhere, `FOOD_API_BASE_URL` and then
+ * the local API stand in. Checked on call, so that a build does not fail for unrelated pages.
  */
 export function getFoodApiBaseUrl(): string {
+  // Next.js inlines a NEXT_PUBLIC_ variable only where it is written out in full, as here.
+  const configured = process.env.NEXT_PUBLIC_FOOD_API_BASE_URL?.trim();
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error("NEXT_PUBLIC_FOOD_API_BASE_URL is required in production.");
+  }
   const raw =
-    process.env.NEXT_PUBLIC_FOOD_API_BASE_URL ??
-    process.env.FOOD_API_BASE_URL ??
+    configured ||
+    process.env.FOOD_API_BASE_URL?.trim() ||
     `http://localhost:${FOOD_OVERLAY_SPEC.default_local_port}`;
-  return raw.trim().replace(/\/+$/, "");
+  return raw.replace(/\/+$/, "");
 }
 
 /** Builds a privacy-enhanced YouTube nocookie embed URL with optional chapter offset. */

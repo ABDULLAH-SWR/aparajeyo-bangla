@@ -1,6 +1,7 @@
 data/*
 !data/geo_codes.v03.json
 !data/geo_codes.v03.json.sha256
+node_modules/
 api/node_modules/
 workers/.venv/
 **/__pycache__/

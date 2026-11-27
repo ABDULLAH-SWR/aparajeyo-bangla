@@ -1,32 +1,53 @@
-import { FOOD_CATEGORIES, getFoodApiBaseUrl } from "./constants";
-import type {
-  ApiErrorResponse,
-  FoodCategory,
-  FoodHealthResponse,
-  FoodPinDetail,
-  FoodPinsFeatureCollection,
-  FoodPinsQueryParams,
-} from "./types";
+import { hc } from "hono/client";
+import { z } from "zod";
+import type { FoodApiApp } from "./api/app";
+import { FOOD_CATEGORIES, type FOOD_ERROR_CODES } from "./contract/enums";
+import { ApiErrorResponseSchema, FoodPinDetailSchema, FoodPinsFeatureCollectionSchema } from "./contract/schemas";
+import type { FoodCategory, FoodPinDetail, FoodPinsFeatureCollection } from "./types";
 
-const VALID_CATEGORIES = new Set<string>(FOOD_CATEGORIES);
+/** `globalThis.fetch` and a Hono `app.fetch` both satisfy this. */
+export type FoodFetch = (request: Request) => Response | Promise<Response>;
 
-interface CachedEntry<T> {
-  etag: string;
-  payload: T;
+export interface FoodServiceDeps {
+  baseUrl: string;
+  fetch?: FoodFetch;
+  /** The most responses kept for ETag revalidation. */
+  cacheCapacity?: number;
 }
 
-const etagCache = new Map<string, CachedEntry<unknown>>();
+export interface FoodPinsFilter {
+  districtId?: string;
+  /** "minLng,minLat,maxLng,maxLat". Cannot be combined with districtId. */
+  bbox?: string;
+  categories?: FoodCategory[];
+  hasVideo?: boolean;
+}
+
+/** The API's codes, plus the client-only code for a request that got no response (contract C2). */
+export type FoodClientErrorCode = (typeof FOOD_ERROR_CODES)[number] | "UPSTREAM_UNAVAILABLE";
 
 export class FoodApiError extends Error {
   readonly status: number;
-  readonly code: string;
+  readonly code: FoodClientErrorCode;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: FoodClientErrorCode, message: string) {
     super(message);
     this.name = "FoodApiError";
     this.status = status;
     this.code = code;
   }
+}
+
+const CategoriesSchema = z.array(z.enum(FOOD_CATEGORIES)).min(1).optional();
+
+/** Maps a non-2xx response. A body that is not the contract envelope (a proxy page, say) is internal. */
+async function toApiError(res: Pick<Response, "status" | "json">): Promise<FoodApiError> {
+  const body = await res.json().catch(() => undefined);
+  const envelope = ApiErrorResponseSchema.safeParse(body);
+  if (!envelope.success) {
+    return new FoodApiError(res.status, "INTERNAL_ERROR", `Food API request failed with HTTP ${res.status}.`);
+  }
+  return new FoodApiError(res.status, envelope.data.error.code, envelope.data.error.message);
 }
 
 /** Picks the best available bilingual display name following the contract fallback rule. */
@@ -40,170 +61,90 @@ export function getFoodDisplayName(
   return place.name_en ?? place.name_bn ?? "";
 }
 
-/** Clears the client-side ETag cache. */
-export function clearFoodApiCache(): void {
-  etagCache.clear();
-}
+/** Revalidates by ETag: a `304` is answered with the body stored for that URL. */
+function withEtagCache(send: FoodFetch, capacity: number): (request: Request) => Promise<Response> {
+  const entries = new Map<string, { etag: string; body: string }>();
 
-function assertFoodPinsCollection(payload: unknown): FoodPinsFeatureCollection {
-  if (!payload || typeof payload !== "object") {
-    throw new FoodApiError(502, "INTERNAL_ERROR", "Invalid GeoJSON payload from Food API.");
-  }
-  const obj = payload as Record<string, unknown>;
-  if (obj.type !== "FeatureCollection" || !Array.isArray(obj.features)) {
-    throw new FoodApiError(502, "INTERNAL_ERROR", "Food pins response is not a FeatureCollection.");
-  }
-  const metadata = obj.metadata as Record<string, unknown> | undefined;
-  if (!metadata || metadata.overlay !== "food") {
-    throw new FoodApiError(502, "INTERNAL_ERROR", "Food pins response missing food metadata.");
-  }
-  for (const feat of obj.features as Array<Record<string, unknown>>) {
-    const props = feat?.properties as Record<string, unknown> | undefined;
-    if (
-      feat?.type !== "Feature" ||
-      typeof feat.id !== "string" ||
-      !props ||
-      feat.id !== props.id ||
-      props.pin_type !== "food_poi" ||
-      !VALID_CATEGORIES.has(String(props.category)) ||
-      (props.name_en === null && props.name_bn === null)
-    ) {
-      throw new FoodApiError(502, "INTERNAL_ERROR", "Food pin feature violated integration contract.");
-    }
-  }
-  return payload as FoodPinsFeatureCollection;
-}
-
-function assertFoodPinDetail(payload: unknown): FoodPinDetail {
-  if (!payload || typeof payload !== "object") {
-    throw new FoodApiError(502, "INTERNAL_ERROR", "Invalid detail payload from Food API.");
-  }
-  const d = payload as Record<string, unknown>;
-  if (
-    typeof d.id !== "string" ||
-    d.pin_type !== "food_poi" ||
-    typeof d.district_id !== "string" ||
-    !VALID_CATEGORIES.has(String(d.category)) ||
-    (d.name_en === null && d.name_bn === null) ||
-    !Array.isArray(d.photos) ||
-    !Array.isArray(d.youtube_video_ids) ||
-    !Array.isArray(d.videos)
-  ) {
-    throw new FoodApiError(502, "INTERNAL_ERROR", "Food pin detail violated integration contract.");
-  }
-  return payload as FoodPinDetail;
-}
-
-async function fetchLiveJson<T>(
-  url: string,
-  options: { signal?: AbortSignal; bypassCache?: boolean } = {}
-): Promise<T> {
-  const { signal, bypassCache = false } = options;
-  const headers: Record<string, string> = { Accept: "application/json" };
-
-  if (!bypassCache) {
-    const cached = etagCache.get(url);
-    if (cached) {
-      headers["If-None-Match"] = cached.etag;
+  function store(url: string, entry: { etag: string; body: string }): void {
+    entries.delete(url);
+    entries.set(url, entry);
+    // A Map iterates in insertion order, so the first key is the oldest.
+    for (const oldest of entries.keys()) {
+      if (entries.size <= capacity) break;
+      entries.delete(oldest);
     }
   }
 
-  let res: Response;
-  try {
-    res = await fetch(url, { method: "GET", headers, signal, cache: "no-store" });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new FoodApiError(503, "UPSTREAM_UNAVAILABLE", `Food API request failed: ${msg}`);
-  }
-
-  if (res.status === 304) {
-    const cached = etagCache.get(url);
-    if (cached) return cached.payload as T;
-  }
-
-  if (!res.ok) {
-    let code = "INTERNAL_ERROR";
-    let message = `Food API request failed with HTTP ${res.status}`;
-    try {
-      const body = (await res.json()) as ApiErrorResponse;
-      if (body?.error?.code) code = body.error.code;
-      if (body?.error?.message) message = body.error.message;
-    } catch {
-      // Non-JSON error body; retain HTTP status fallback.
-    }
-    throw new FoodApiError(res.status, code, message);
-  }
-
-  const data = (await res.json()) as T;
-  const etag = res.headers.get("ETag");
-  if (etag) {
-    etagCache.set(url, { etag, payload: data });
-  }
-  return data;
-}
-
-export interface FoodRequestOptions {
-  signal?: AbortSignal;
-  baseUrl?: string;
-  bypassCache?: boolean;
-}
-
-/** Fetches live GeoJSON food pins (`GET /api/v1/pins?overlay=food`) from the Hono API. */
-export async function getFoodPins(
-  params: Omit<FoodPinsQueryParams, "overlay" | "refresh"> = {},
-  options: FoodRequestOptions = {}
-): Promise<FoodPinsFeatureCollection> {
-  const baseUrl = (options.baseUrl ?? getFoodApiBaseUrl()).replace(/\/+$/, "");
-  const search = new URLSearchParams({ overlay: "food" });
-
-  if (params.district_id) search.set("district_id", params.district_id);
-  if (params.bbox) search.set("bbox", params.bbox);
-  if (params.category) {
-    const cats = params.category
-      .split(",")
-      .map((c) => c.trim())
-      .filter((c): c is FoodCategory => VALID_CATEGORIES.has(c));
-    if (cats.length > 0) search.set("category", cats.join(","));
-  }
-  if (params.has_video !== undefined) search.set("has_video", String(params.has_video));
-
-  const payload = await fetchLiveJson<unknown>(`${baseUrl}/api/v1/pins?${search.toString()}`, {
-    signal: options.signal,
-    bypassCache: options.bypassCache,
-  });
-  return assertFoodPinsCollection(payload);
-}
-
-/** Fetches live Rich Pin Card detail (`GET /api/v1/pins/food/:id`) from the Hono API. */
-export async function getFoodPinDetail(
-  id: string,
-  options: FoodRequestOptions = {}
-): Promise<FoodPinDetail | null> {
-  const baseUrl = (options.baseUrl ?? getFoodApiBaseUrl()).replace(/\/+$/, "");
-  try {
-    const payload = await fetchLiveJson<unknown>(
-      `${baseUrl}/api/v1/pins/food/${encodeURIComponent(id)}`,
-      {
-        signal: options.signal,
-        bypassCache: options.bypassCache,
+  return async (request) => {
+    const entry = entries.get(request.url);
+    if (entry) request.headers.set("If-None-Match", entry.etag);
+    let res = await send(request);
+    if (res.status === 304) {
+      if (entry) {
+        store(request.url, entry); // marks it most recently used
+        return new Response(entry.body, { status: 200, headers: { "Content-Type": "application/json" } });
       }
-    );
-    return assertFoodPinDetail(payload);
-  } catch (err) {
-    if (err instanceof FoodApiError && err.status === 404) {
-      return null;
+      // Nothing here to answer it with: ask once more, unconditionally.
+      const retry = new Request(request);
+      retry.headers.delete("If-None-Match");
+      res = await send(retry);
     }
-    throw err;
-  }
+    const etag = res.headers.get("ETag");
+    if (res.status === 200 && etag) store(request.url, { etag, body: await res.clone().text() });
+    return res;
+  };
 }
 
-/** Fetches live Food API health and PostGIS dataset counts. */
-export async function getFoodApiHealth(
-  options: FoodRequestOptions = {}
-): Promise<FoodHealthResponse> {
-  const baseUrl = (options.baseUrl ?? getFoodApiBaseUrl()).replace(/\/+$/, "");
-  return fetchLiveJson<FoodHealthResponse>(`${baseUrl}/api/v1/food/health`, {
-    signal: options.signal,
-    bypassCache: true,
+/**
+ * The client of the Food API. Each instance owns its cache: browser code holds one instance,
+ * and nothing is shared between server requests unless the caller shares the instance.
+ */
+export function createFoodService({
+  baseUrl,
+  fetch: send = (request) => fetch(request),
+  cacheCapacity = 64,
+}: FoodServiceDeps) {
+  const cachedSend = withEtagCache(send, cacheCapacity);
+  const client = hc<FoodApiApp>(baseUrl, {
+    // This cache does the revalidation, so the browser's HTTP cache stays out of it.
+    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = new Request(input, { ...init, cache: "no-store" });
+      try {
+        return await cachedSend(request);
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err);
+        throw new FoodApiError(0, "UPSTREAM_UNAVAILABLE", `Food API request failed: ${reason}`);
+      }
+    },
   });
+
+  return {
+    /** Live GeoJSON food pins (`GET /api/v1/pins?overlay=food`). */
+    async getFoodPins(filter: FoodPinsFilter = {}): Promise<FoodPinsFeatureCollection> {
+      if (!CategoriesSchema.safeParse(filter.categories).success) {
+        throw new FoodApiError(400, "INVALID_CATEGORY", "categories must be one or more FoodCategory values.");
+      }
+      const res = await client.api.v1.pins.$get({
+        query: {
+          overlay: "food",
+          district_id: filter.districtId,
+          bbox: filter.bbox,
+          category: filter.categories?.join(","),
+          has_video: filter.hasVideo?.toString(),
+        },
+      });
+      if (!res.ok) throw await toApiError(res);
+      return FoodPinsFeatureCollectionSchema.parse(await res.json());
+    },
+
+    /** Live Rich Pin Card detail (`GET /api/v1/pins/food/:id`). */
+    async getFoodPinDetail(id: string): Promise<FoodPinDetail> {
+      // hc inserts path params verbatim.
+      const res = await client.api.v1.pins.food[":id"].$get({ param: { id: encodeURIComponent(id) } });
+      if (!res.ok) throw await toApiError(res);
+      return FoodPinDetailSchema.parse(await res.json());
+    },
+  };
 }
+
+export type FoodService = ReturnType<typeof createFoodService>;
