@@ -11,7 +11,7 @@ LATIN_LETTER_RE = re.compile(r"[A-Za-z]")
 WHITESPACE_RE = re.compile(r"\s+")
 PUNCT_RE = re.compile(r"[^\w\u0980-\u09FF\s]", re.UNICODE)
 
-GENERIC_SUFFIXES = {
+_RAW_SUFFIXES = (
     "restaurant",
     "hotel",
     "cafe",
@@ -25,7 +25,7 @@ GENERIC_SUFFIXES = {
     "হোটেল",
     "ক্যাফে",
     "হাউস",
-}
+)
 
 BN_TRANSLIT = {
     "অ": "o", "আ": "a", "ই": "i", "ঈ": "i", "উ": "u", "ঊ": "u", "ঋ": "ri",
@@ -48,6 +48,15 @@ def normalize_bangla(text: str | None) -> str:
         return ""
     cleaned = buet_normalize(text, unicode_norm="NFKC")
     return WHITESPACE_RE.sub(" ", cleaned).strip()
+
+
+# Normalized like the text it is compared with, however the literals above were typed.
+GENERIC_SUFFIXES = frozenset(normalize_bangla(s) for s in _RAW_SUFFIXES)
+
+
+def strip_generic_suffixes(normalized: str) -> str:
+    """Removes generic words such as "restaurant" from normalized text."""
+    return " ".join(tok for tok in normalized.split() if tok not in GENERIC_SUFFIXES)
 
 
 def contains_bengali(text: str | None) -> bool:
@@ -83,9 +92,7 @@ def normalize_match_key(text: str | None) -> str:
     if not text:
         return ""
     s = normalize_bangla(text).lower()
-    s = PUNCT_RE.sub(" ", s)
-    tokens = [tok for tok in s.split() if tok not in GENERIC_SUFFIXES]
-    return " ".join(tokens).strip()
+    return strip_generic_suffixes(PUNCT_RE.sub(" ", s))
 
 
 def transliterate_bn_for_matching(text: str | None) -> str:

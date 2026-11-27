@@ -7,16 +7,14 @@ import json
 import logging
 import os
 import re
-import sys
 from pathlib import Path
 from urllib.parse import unquote
 
 import boto3
 import httpx
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from food_photo_sync.license import is_allowed_license
-from shared.db import get_pg_connection
+from food_shared.db import get_pg_connection
 
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"

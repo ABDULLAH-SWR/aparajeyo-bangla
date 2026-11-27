@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 12 nodes and 2 ways across Dhaka and Bogura. Nodes 1-4 and 6 are food POIs, node 5 is not food,
+     nodes 7-12 are the corners of the two ways. -->
+<osm version="0.6" generator="food-tests">
+  <node id="1" version="1" lat="23.7500" lon="90.3700">
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Star Kabab"/>
+    <tag k="name:bn" v="স্টার কাবাব"/>
+    <tag k="cuisine" v="kebab"/>
+  </node>
+  <node id="2" version="1" lat="23.7600" lon="90.3800">
+    <tag k="amenity" v="cafe"/>
+    <tag k="name" v="Tong Cha Ghor"/>
+  </node>
+  <node id="3" version="1" lat="23.7200" lon="90.4100">
+    <tag k="shop" v="confectionery"/>
+    <tag k="name:bn" v="আলাউদ্দিন সুইটমিট"/>
+    <tag k="cuisine" v="sweets"/>
+  </node>
+  <node id="4" version="1" lat="23.7900" lon="90.4200">
+    <tag k="amenity" v="fast_food"/>
+    <tag k="name" v="Burger Point"/>
+  </node>
+  <node id="5" version="1" lat="23.7700" lon="90.3900">
+    <tag k="amenity" v="bank"/>
+    <tag k="name" v="City Bank"/>
+  </node>
+  <node id="6" version="1" lat="24.8500" lon="89.3700">
+    <tag k="shop" v="bakery"/>
+    <tag k="name" v="Akboria Bakery"/>
+  </node>
+  <node id="7" version="1" lat="24.8480" lon="89.3750"/>
+  <node id="8" version="1" lat="24.8480" lon="89.3753"/>
+  <node id="9" version="1" lat="24.8483" lon="89.3750"/>
+  <node id="10" version="1" lat="23.7450" lon="90.3750"/>
+  <node id="11" version="1" lat="23.7450" lon="90.3753"/>
+  <node id="12" version="1" lat="23.7453" lon="90.3750"/>
+  <way id="101" version="1">
+    <nd ref="7"/>
+    <nd ref="8"/>
+    <nd ref="9"/>
+    <nd ref="7"/>
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Akboria Hotel"/>
+  </way>
+  <way id="102" version="1">
+    <nd ref="10"/>
+    <nd ref="11"/>
+    <nd ref="12"/>
+    <nd ref="10"/>
+    <tag k="amenity" v="food_court"/>
+    <tag k="name" v="Dhanmondi Food Court"/>
+  </way>
+</osm>

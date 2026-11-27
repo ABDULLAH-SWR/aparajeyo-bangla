@@ -66,6 +66,7 @@ ensure_setting IMGPROXY_BASE_URL http://127.0.0.1:8081
 ensure_setting CORS_ALLOWED_ORIGINS http://localhost:3000
 ensure_setting FOOD_INTERNAL_BIND_ADDR 127.0.0.1
 ensure_setting GEO_CODES_PATH data/geo_codes.v03.json
+ensure_setting FOOD_API_BASE_URL http://127.0.0.1:8002
 
 # .env holds optional non-secret settings; .env.local is read last, so it wins.
 env_files=()

@@ -12,3 +12,6 @@ workers/.venv/
 .env.local.tmp
 !.env.example
 CLAUDE.md
+
+# Importer test fixtures are committed.
+!workers/tests/fixtures/overture/*.parquet

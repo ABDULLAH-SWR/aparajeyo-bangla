@@ -8,9 +8,11 @@ from urllib.parse import urlsplit, urlunsplit
 
 import psycopg
 import pytest
+import valkey
+from importing import GEO_FIXTURE
 from psycopg.rows import dict_row
 
-from shared.db import FOOD_ROOT
+from food_shared.config import FOOD_ROOT
 
 MIGRATIONS = sorted((FOOD_ROOT / "db" / "migrations").glob("*.sql"))
 
@@ -92,6 +94,31 @@ class FoodDb:
             f"INSERT INTO {table} ({columns}) VALUES ({values}) RETURNING {returning}",
             list(row.values()),
         ).fetchone()
+
+
+@pytest.fixture
+def valkey_db():
+    """An empty logical database. The API cache tests use 11-15, dev keys 0 and Directus 1."""
+    url = os.environ.get("VALKEY_URL")
+    if not url:
+        pytest.skip("VALKEY_URL is not set")
+    parts = urlsplit(url)
+    client = valkey.from_url(urlunsplit(parts._replace(path="/10")), decode_responses=True)
+    client.flushdb()
+    try:
+        yield client
+    finally:
+        client.flushdb()
+        client.close()
+
+
+@pytest.fixture
+def import_db(food_db, valkey_db):
+    """A migrated database holding the importer's boundary fixture, and the importer's cache."""
+    food_db.valkey = valkey_db
+    food_db.migrate()
+    food_db.conn.execute(GEO_FIXTURE.read_text(encoding="utf-8"))
+    return food_db
 
 
 @pytest.fixture

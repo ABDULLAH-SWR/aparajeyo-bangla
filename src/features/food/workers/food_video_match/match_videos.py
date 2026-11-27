@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import json
+import os
 import re
-import sys
 from difflib import SequenceMatcher
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from shared.bangla_norm import normalize_match_key, transliterate_bn_for_matching
-from shared.db import get_pg_connection, load_geo_codes
+from food_shared.bangla_norm import normalize_match_key, transliterate_bn_for_matching
+from food_shared.config import load_geo_codes
+from food_shared.db import get_pg_connection
 
 CHAPTER_RE = re.compile(r"^\s*(?:(\d+):)?(\d{1,2}):(\d{2})\s+[-–|:]?\s*(.+)$", re.MULTILINE)
 
@@ -85,7 +84,7 @@ def match_segment(
 
 def run_matching() -> dict:
     conn = get_pg_connection()
-    geo = load_geo_codes()
+    geo = load_geo_codes(os.environ)
 
     with conn.cursor() as cur:
         cur.execute("SELECT video_id, title, description FROM youtube_videos WHERE is_available")

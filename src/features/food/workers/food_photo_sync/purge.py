@@ -6,12 +6,9 @@ Run before migration 0002, which refuses to apply while any such row exists.
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from food_photo_sync.sync_photos import get_s3_client
-from shared.db import get_pg_connection
+from food_shared.db import get_pg_connection
 
 # Must stay identical to the place_photos_license_chk pattern in 0002_place_photos_per_place.sql.
 DB_LICENSE_PATTERN = (

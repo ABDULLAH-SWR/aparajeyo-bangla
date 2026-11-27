@@ -16,10 +16,8 @@ def seed_video(db, video_id: str, title: str) -> None:
     )
 
 
-def test_auto_approved_match_is_stored_unreviewed(food_db, monkeypatch, tmp_path):
-    geo = tmp_path / "geo_codes.json"
-    geo.write_text('{"districts": [], "upazilas": []}', encoding="utf-8")
-    monkeypatch.setenv("GEO_CODES_PATH", str(geo))
+def test_auto_approved_match_is_stored_unreviewed(food_db, monkeypatch):
+    monkeypatch.setenv("GEO_CODES_PATH", "data/geo_codes.v03.json")
     food_db.migrate()
     food_db.seed_geo()
     food_db.insert_place(name_en="Sultans Dine", name_norm="sultans dine")

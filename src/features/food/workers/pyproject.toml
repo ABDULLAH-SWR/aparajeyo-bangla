@@ -24,13 +24,15 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = ["e2e: needs the running stack, including the API"]
 
 [tool.mypy]
-# Modules are imported from this directory (`shared.db`), the same root pytest uses.
+# Modules are imported from this directory (`food_shared.db`), the same root pytest uses.
 explicit_package_bases = true
 
 [project.scripts]
-food-poi-import          = "food_poi_import.import_pois:main"
+food-poi-import          = "food_poi_import.run:main"
+food-cache-warm          = "food_cache_warm.warm:main"
 food-photo-purge-nonfree = "food_photo_sync.purge:main"
 
 [build-system]
@@ -41,4 +43,4 @@ build-backend = "hatchling.build"
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["food_cache_warm", "food_photo_sync", "food_poi_import", "food_video_match", "food_youtube_index", "shared"]
+packages = ["food_cache_warm", "food_photo_sync", "food_poi_import", "food_video_match", "food_youtube_index", "food_shared"]
