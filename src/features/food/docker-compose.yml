@@ -1,3 +1,7 @@
+# Secrets have no defaults: compose fails closed. Generate .env.local with scripts/dev-up.sh.
+# No compose service reads this token; it is listed here so a missing value still fails closed.
+x-food-invalidate-token: ${FOOD_INVALIDATE_TOKEN:?required}
+
 services:
   postgres:
     image: postgis/postgis:17-3.5
@@ -5,7 +9,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-food}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-food}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
       POSTGRES_DB: ${POSTGRES_DB:-aparajeyo_food}
     ports:
       - "${FOOD_PG_PORT:-5433}:5432"
@@ -37,6 +41,9 @@ services:
     ports:
       - "${FOOD_S3_PORT:-3900}:3900"
       - "${FOOD_GARAGE_ADMIN_PORT:-3903}:3903"
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:?required}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:?required}
     volumes:
       - ./garage.toml:/etc/garage.toml:ro
       - food_garage_meta:/var/lib/garage/meta
@@ -51,13 +58,13 @@ services:
     ports:
       - "${FOOD_IMGPROXY_PORT:-8081}:8080"
     environment:
-      IMGPROXY_KEY: ${IMGPROXY_KEY:-7365637265746b657961706172616a65796f666f6f64696d6770726f78793031}
-      IMGPROXY_SALT: ${IMGPROXY_SALT:-73656372657473616c7461706172616a65796f666f6f64696d6770726f787930}
+      IMGPROXY_KEY: ${IMGPROXY_KEY:?required}
+      IMGPROXY_SALT: ${IMGPROXY_SALT:?required}
       IMGPROXY_USE_S3: "true"
       IMGPROXY_S3_ENDPOINT: "http://garage:3900"
       IMGPROXY_S3_REGION: "ap-south-1"
-      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-GK000000000000000000000000}
-      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:?required}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:?required}
       IMGPROXY_ENABLE_WEBP_DETECTION: "true"
       IMGPROXY_ENABLE_AVIF_DETECTION: "true"
       IMGPROXY_MAX_SRC_RESOLUTION: "50"
@@ -74,15 +81,15 @@ services:
     ports:
       - "${FOOD_DIRECTUS_PORT:-8055}:8055"
     environment:
-      SECRET: ${DIRECTUS_SECRET:-aparajeyo-food-directus-dev-secret-key-2026}
-      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:-admin@aparajeyo.local}
-      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:-aparajeyo-food-admin}
+      SECRET: ${DIRECTUS_SECRET:?required}
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:?required}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:?required}
       DB_CLIENT: pg
       DB_HOST: postgres
       DB_PORT: 5432
       DB_DATABASE: ${POSTGRES_DB:-aparajeyo_food}
       DB_USER: ${POSTGRES_USER:-food}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-food}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?required}
       CACHE_ENABLED: "true"
       CACHE_STORE: redis
       REDIS: "redis://valkey:6379"

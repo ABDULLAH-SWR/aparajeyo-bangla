@@ -14,16 +14,12 @@ import boto3
 import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from food_photo_sync.license import is_allowed_license  # noqa: E402
 from shared.db import get_pg_connection, now_bst_iso  # noqa: E402
 
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
 USER_AGENT = "AparajeyoFoodSync/0.1 (https://aparajeyo.com)"
-
-ALLOWED_LICENSE_RE = re.compile(
-    r"^(CC0|CC-Zero|Public domain|PD|CC[\s-]BY(?:[\s-]SA)?(?:\s+\d+\.\d+)?)",
-    re.IGNORECASE,
-)
 
 
 def extract_commons_title(tags: dict) -> str | None:
@@ -60,10 +56,6 @@ def resolve_wikidata_p18(client: httpx.Client, qid: str) -> str | None:
 
 def strip_html(value: str | None) -> str:
     return re.sub(r"<[^>]+>", "", value or "").strip()
-
-
-def is_allowed_license(license_name: str) -> bool:
-    return bool(ALLOWED_LICENSE_RE.match(strip_html(license_name)))
 
 
 def get_s3_client():
@@ -103,7 +95,7 @@ def fetch_commons_photo(client: httpx.Client, title: str) -> dict | None:
         info = infos[0]
         ext = info.get("extmetadata") or {}
         lic = strip_html(ext.get("LicenseShortName", {}).get("value"))
-        if not is_allowed_license(lic):
+        if not is_allowed_license(lic, ext.get("NonFree", {}).get("value")):
             return None
         author = strip_html(ext.get("Artist", {}).get("value")) or "Wikimedia Commons contributor"
         lic_url = strip_html(ext.get("LicenseUrl", {}).get("value")) or "https://creativecommons.org/"

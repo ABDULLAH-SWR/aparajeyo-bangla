@@ -1,0 +1,7 @@
+{
+  "name": "aparajeyo-food",
+  "private": true,
+  "scripts": {
+    "test:scripts": "bash scripts/tests/check-secrets.test.sh"
+  }
+}

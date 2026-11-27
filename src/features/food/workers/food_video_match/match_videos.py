@@ -50,6 +50,39 @@ def similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
 
+def match_segment(
+    segment_text: str,
+    candidates: list[dict],
+    *,
+    district_detected: bool,
+    chapter_line: bool,
+) -> list[dict]:
+    """Scores one title or chapter line against candidate places, best match first."""
+    seg_norm = normalize_match_key(segment_text)
+    seg_roman = transliterate_bn_for_matching(segment_text)
+    matches: list[dict] = []
+
+    for p in candidates:
+        if len(p["norm_en"]) < 4 and len(p["norm_bn"]) < 4:
+            continue
+        score = 0.0
+        for key, segment in (
+            (p["norm_en"], seg_norm),
+            (p["norm_bn"], seg_norm),
+            (p["roman"], seg_roman),
+        ):
+            key_score = similarity(key, segment)
+            if f" {key} " not in f" {segment} ":
+                key_score = min(key_score, 0.60)
+            elif len(key) < 6 or not (district_detected or chapter_line):
+                key_score = min(key_score, 0.84)  # pending review, never auto-approved
+            score = max(score, key_score)
+        if score >= 0.50:
+            matches.append({"place_id": p["id"], "confidence": round(min(score, 0.99), 2)})
+
+    return sorted(matches, key=lambda m: m["confidence"], reverse=True)
+
+
 def run_matching() -> dict:
     conn = get_pg_connection()
     geo = load_geo_codes()
@@ -95,23 +128,15 @@ def run_matching() -> dict:
                 segments.append((v["title"], None, "title_fuzzy"))
 
             for seg_text, start_sec, method in segments:
-                seg_norm = normalize_match_key(seg_text)
-                seg_roman = transliterate_bn_for_matching(seg_text)
-                best: tuple[float, str] | None = None
+                matches = match_segment(
+                    seg_text,
+                    candidates,
+                    district_detected=True,  # candidates come only from detected districts
+                    chapter_line=method == "chapter",
+                )
 
-                for p in candidates:
-                    if len(p["norm_en"]) < 4 and len(p["norm_bn"]) < 4:
-                        continue
-                    score = max(
-                        similarity(p["norm_en"], seg_norm),
-                        similarity(p["norm_bn"], seg_norm),
-                        similarity(p["roman"], seg_roman),
-                    )
-                    if best is None or score > best[0]:
-                        best = (score, p["id"])
-
-                if best and best[0] >= 0.50:
-                    conf = round(min(best[0], 0.99), 2)
+                if matches:
+                    conf = matches[0]["confidence"]
                     status = "auto_approved" if conf >= 0.85 else "pending"
                     cur.execute(
                         """
@@ -123,7 +148,7 @@ def run_matching() -> dict:
                           method = EXCLUDED.method,
                           start_seconds = COALESCE(EXCLUDED.start_seconds, video_place_matches.start_seconds)
                         """,
-                        (v["video_id"], best[1], conf, method, start_sec, status, now_iso),
+                        (v["video_id"], matches[0]["place_id"], conf, method, start_sec, status, now_iso),
                     )
                     upserted += 1
 

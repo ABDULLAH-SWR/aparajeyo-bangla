@@ -76,7 +76,7 @@ async function ensureLocalStackReady(): Promise<void> {
   const wslFoodDir = toWslPath(foodDir);
   const up = spawnSync(
     "wsl",
-    ["-d", "Ubuntu", "--", "bash", "-c", `cd '${wslFoodDir}' && docker compose up -d`],
+    ["-d", "Ubuntu", "--", "bash", "-c", `cd '${wslFoodDir}' && bash scripts/dev-up.sh`],
     { encoding: "utf8", windowsHide: true }
   );
   if (up.status !== 0) {

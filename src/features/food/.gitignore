@@ -6,3 +6,7 @@ workers/.venv/
 *.osm.pbf
 *.parquet
 .env
+.env.local
+.env.local.tmp
+!.env.example
+CLAUDE.md

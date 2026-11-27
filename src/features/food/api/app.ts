@@ -475,9 +475,11 @@ const app = new Hono()
   .notFound((c) =>
     c.json({ error: { code: "FOOD_PLACE_NOT_FOUND", message: `Route not found: ${c.req.path}` } }, 404)
   )
-  .onError((err, c) =>
-    c.json({ error: { code: "INTERNAL_ERROR", message: err.message || "Internal server error" } }, 500)
-  );
+  .onError((err, c) => {
+    // Detail stays server-side: driver messages can expose hosts and SQL.
+    console.error("[food-api] unhandled error", { err, request_id: crypto.randomUUID() });
+    return c.json({ error: { code: "INTERNAL_ERROR", message: "Internal server error." } }, 500);
+  });
 
 export type FoodApiApp = typeof app;
 export default app;

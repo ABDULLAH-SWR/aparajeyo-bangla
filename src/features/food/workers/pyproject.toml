@@ -15,3 +15,12 @@ dependencies = [
   "shapely>=2.0.6",
   "valkey>=6.0.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
