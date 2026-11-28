@@ -1,9 +1,9 @@
-// One logical database per cache test file. DB 0 holds dev Food keys, DB 1 holds Directus and the
-// worker tests use DB 10.
+// One logical database per test file that needs Valkey (stricter than the per-worker index of Guide
+// §7.1). Taken elsewhere: DB 0 dev, 1 Directus runtime, 10 workers, 15 Directus tests.
 import Redis from "ioredis";
 import { inject } from "vitest";
 
-export async function createFileValkey(index: 9 | 11 | 12 | 13 | 14 | 15) {
+export async function createFileValkey(index: 8 | 9 | 11 | 12 | 13 | 14) {
   const url = new URL(inject("valkeyUrl"));
   url.pathname = `/${index}`;
   const client = new Redis(url.toString());

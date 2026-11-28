@@ -111,7 +111,10 @@ class FoodDb:
 
 @pytest.fixture
 def valkey_db():
-    """An empty logical database. The API cache tests use 11-15, dev keys 0 and Directus 1."""
+    """An empty logical database. The API tests use 8, 9 and 11-14.
+
+    Also taken: DB 0 dev, 1 Directus runtime, 10 workers, 15 Directus tests.
+    """
     parts = urlsplit(service_url("VALKEY_URL"))
     client = valkey.from_url(urlunsplit(parts._replace(path="/10")), decode_responses=True)
     client.flushdb()

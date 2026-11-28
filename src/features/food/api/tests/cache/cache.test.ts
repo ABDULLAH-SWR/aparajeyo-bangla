@@ -18,7 +18,7 @@ let placeId: string;
 
 beforeAll(async () => {
   db = await createFileDb();
-  valkey = await createFileValkey(15);
+  valkey = await createFileValkey(8);
   await seedGeo(db.sql);
   placeId = await insertPlace(db.sql, { name_en: "Old Name" });
   await insertImportRun(db.sql);
