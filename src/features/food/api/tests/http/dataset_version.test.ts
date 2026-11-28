@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { createTestApp } from "../support/app";
 import { fixedClock } from "../support/clock";
-import { insertPlace, seedGeo } from "../support/fixtures";
+import { insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
 import { insertImportRun } from "../support/seed";
 
@@ -15,7 +15,6 @@ let db: FileDb;
 beforeAll(async () => {
   db = await createFileDb();
   await db.sql`DELETE FROM sync_runs`; // the template carries one succeeded import; c2 needs none
-  await seedGeo(db.sql);
   await insertPlace(db.sql);
 });
 

@@ -4,7 +4,7 @@ import { FoodPinDetailSchema, FoodPinsFeatureCollectionSchema } from "../../../c
 import { createFoodService, FoodApiError } from "../../../foodService";
 import type { FoodCategory } from "../../../types";
 import { createTestApp, type TestApp } from "../support/app";
-import { DHAKA, insertPlace, seedGeo } from "../support/fixtures";
+import { DHAKA, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
 import { insertImportRun } from "../support/seed";
 
@@ -16,7 +16,6 @@ let zinda: string;
 
 beforeAll(async () => {
   db = await createFileDb();
-  await seedGeo(db.sql);
   zinda = await insertPlace(db.sql, { district_id: DHAKA, name_en: "Zinda Kebab" });
   await insertPlace(db.sql, { district_id: DHAKA, name_en: "Anna Sweets", category: "cafe" });
   await insertImportRun(db.sql);

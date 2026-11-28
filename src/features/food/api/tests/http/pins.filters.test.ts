@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertMatch, insertPlace, seedGeo } from "../support/fixtures";
+import { insertMatch, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
 import { insertContractVideo, insertImportRun } from "../support/seed";
 import { createFileValkey, type FileValkey } from "../support/valkey";
@@ -18,7 +18,6 @@ let teaStall: string;
 beforeAll(async () => {
   db = await createFileDb();
   valkey = await createFileValkey(12);
-  await seedGeo(db.sql);
   await insertImportRun(db.sql);
   cafe = await insertPlace(db.sql, { name_en: "A Cafe", category: "cafe" });
   teaStall = await insertPlace(db.sql, { name_en: "B Tea", category: "tea_stall" });

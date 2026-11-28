@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { DHAKA, insertPlace, seedGeo } from "../support/fixtures";
+import { DHAKA, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
 import { insertImportRun, insertDistrict } from "../support/seed";
 
@@ -13,7 +13,6 @@ let expectedIds: string[];
 
 beforeAll(async () => {
   db = await createFileDb();
-  await seedGeo(db.sql);
   await insertDistrict(db.sql, CHATTOGRAM, "Chattogram");
   const zinda = await insertPlace(db.sql, { district_id: DHAKA, name_en: "Zinda Kebab" });
   const anna = await insertPlace(db.sql, { district_id: DHAKA, name_en: "Anna Sweets" });

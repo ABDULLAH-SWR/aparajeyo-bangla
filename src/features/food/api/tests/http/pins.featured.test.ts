@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertMatch, insertPlace, seedGeo } from "../support/fixtures";
+import { insertMatch, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
 import { insertContractVideo, insertImportRun } from "../support/seed";
 
@@ -12,7 +12,6 @@ let filmed: string;
 
 beforeAll(async () => {
   db = await createFileDb();
-  await seedGeo(db.sql);
   await insertImportRun(db.sql);
   // Names put the filmed place first alphabetically, so only the featured flag can order it second.
   filmed = await insertPlace(db.sql, { name_en: "A Filmed Cafe" });

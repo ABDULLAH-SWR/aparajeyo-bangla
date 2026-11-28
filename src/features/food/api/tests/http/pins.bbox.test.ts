@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertPlace, seedGeo } from "../support/fixtures";
+import { insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
 import { insertImportRun } from "../support/seed";
 import { createFileValkey, type FileValkey } from "../support/valkey";
@@ -20,7 +20,6 @@ let sameTile: string;
 beforeAll(async () => {
   db = await createFileDb();
   valkey = await createFileValkey(13);
-  await seedGeo(db.sql);
   await insertImportRun(db.sql);
   const at = (name_en: string, lng: number) =>
     insertPlace(db.sql, { name_en, geom: `SRID=4326;POINT(${lng} 23.715)` });

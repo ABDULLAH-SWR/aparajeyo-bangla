@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinDetailSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { DHAKA, DHANMONDI, insertMatch, insertPhoto, insertPlace, seedGeo } from "../support/fixtures";
+import { DHAKA, DHANMONDI, insertMatch, insertPhoto, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
 import { insertContractVideo } from "../support/seed";
 
@@ -11,7 +11,6 @@ let placeId: string;
 
 beforeAll(async () => {
   db = await createFileDb();
-  await seedGeo(db.sql);
   placeId = await insertPlace(db.sql, {
     district_id: DHAKA,
     upazila_id: DHANMONDI,

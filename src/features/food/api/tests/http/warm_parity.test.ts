@@ -2,7 +2,7 @@
 // indistinguishable from a computed one.
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertPlace, seedGeo } from "../support/fixtures";
+import { insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
 import { insertImportRun } from "../support/seed";
 import { createFileValkey, type FileValkey } from "../support/valkey";
@@ -14,7 +14,6 @@ let t: TestApp;
 beforeAll(async () => {
   db = await createFileDb();
   valkey = await createFileValkey(9);
-  await seedGeo(db.sql);
   await insertPlace(db.sql);
   await insertImportRun(db.sql);
   t = createTestApp({ databaseUrl: db.url, valkeyUrl: valkey.url });

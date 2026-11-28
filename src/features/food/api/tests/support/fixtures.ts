@@ -1,5 +1,6 @@
 /// <reference types="bun" />
 // Row builders that satisfy the head schema. Tests override only the column under test.
+import { readFileSync } from "node:fs";
 import type postgres from "postgres";
 
 export const DHAKA = "BD3026";
@@ -7,29 +8,11 @@ export const BOGURA = "BD5010";
 export const BOGURA_SADAR = "BD50100020";
 export const DHANMONDI = "BD30260014";
 
-const square = (lng: number, lat: number) =>
-  `MULTIPOLYGON(((${lng} ${lat},${lng + 0.2} ${lat},${lng + 0.2} ${lat + 0.2},${lng} ${lat + 0.2},${lng} ${lat})))`;
+const GEO_SEED = new URL("../../../db/seeds/test_geo.sql", import.meta.url);
 
-/** Two districts with one upazila each. */
+/** Two districts with one upazila each. The Vitest template database already holds them. */
 export async function seedGeo(sql: postgres.Sql): Promise<void> {
-  const districts = [
-    { id: DHAKA, name: "Dhaka", geom: square(90.3, 23.7) },
-    { id: BOGURA, name: "Bogura", geom: square(89.3, 24.8) },
-  ];
-  for (const d of districts) {
-    await sql`INSERT INTO geo_districts (id, name_en, name_bn, geom)
-      VALUES (${d.id}, ${d.name}, ${d.name}, ST_GeomFromText(${d.geom}, 4326))
-      ON CONFLICT (id) DO NOTHING`;
-  }
-  const upazilas = [
-    { id: DHANMONDI, district: DHAKA, name: "Dhanmondi", geom: square(90.3, 23.7) },
-    { id: BOGURA_SADAR, district: BOGURA, name: "Bogura Sadar", geom: square(89.3, 24.8) },
-  ];
-  for (const u of upazilas) {
-    await sql`INSERT INTO geo_upazilas (id, district_id, name_en, name_bn, geom)
-      VALUES (${u.id}, ${u.district}, ${u.name}, ${u.name}, ST_GeomFromText(${u.geom}, 4326))
-      ON CONFLICT (id) DO NOTHING`;
-  }
+  await sql.unsafe(readFileSync(GEO_SEED, "utf8"));
 }
 
 export async function insertPlace(

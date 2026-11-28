@@ -1,8 +1,8 @@
 // Vitest globalSetup: one PostGIS server and one Valkey server for the run.
 //   default                  start testcontainers
 //   FOOD_TEST_USE_COMPOSE=1  use the running servers of docker-compose.test.yml (see compose.ts)
-// Migrations and db/seeds/test_base.sql load once into a template database; setup.ts clones it for
-// each test file.
+// Migrations and the seeds (db/seeds/test_geo.sql, then test_base.sql) load once into a template
+// database; setup.ts clones it for each test file.
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
 import { resolveBinary } from "dbmate";
 import { execFile } from "node:child_process";
@@ -18,7 +18,7 @@ import type { TestProject } from "vitest/node";
 import { COMPOSE_PG_URL, COMPOSE_VALKEY_URL, USE_COMPOSE } from "./compose";
 
 const MIGRATIONS_DIR = resolve(fileURLToPath(import.meta.url), "../../../../db/migrations");
-const BASE_SEED = resolve(MIGRATIONS_DIR, "../seeds/test_base.sql");
+const SEEDS = ["test_geo.sql", "test_base.sql"].map((file) => resolve(MIGRATIONS_DIR, "../seeds", file));
 const POSTGIS_IMAGE = "postgis/postgis:17-3.5"; // must equal the compose `postgres` image tag
 const VALKEY_IMAGE = "valkey/valkey:8.1-alpine"; // must equal the compose `valkey` image tag
 
@@ -61,7 +61,7 @@ export default async function setup(project: TestProject) {
   ]);
 
   const seed = postgres(templateUrl.toString(), { max: 1, onnotice: () => {} });
-  await seed.unsafe(readFileSync(BASE_SEED, "utf8"));
+  for (const file of SEEDS) await seed.unsafe(readFileSync(file, "utf8"));
   await seed.end(); // a template cannot be cloned while anything is connected to it
   const runDir = mkdtempSync(join(tmpdir(), "food-test-run-"));
 

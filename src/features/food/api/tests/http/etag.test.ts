@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertPlace, seedGeo } from "../support/fixtures";
+import { insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
 import { insertImportRun } from "../support/seed";
 
@@ -12,7 +12,6 @@ let t: TestApp;
 
 beforeAll(async () => {
   db = await createFileDb();
-  await seedGeo(db.sql);
   await insertPlace(db.sql);
   await insertImportRun(db.sql);
   t = createTestApp({ databaseUrl: db.url });
