@@ -26,14 +26,12 @@ describe("the Directus snapshot", () => {
     expect(field.data).toMatchObject({ meta: { readonly: true, hidden: true } });
   });
 
-
   test.each(["name_en", "name_bn", "geom", "category", "source", "source_id", "tags", "wikimedia_s3_keys",
     "youtube_video_ids"])("c3 keeps the importer-owned field %s read-only", async (name) => {
     const field = await admin.get(`/fields/places/${name}`);
 
     expect(field.data).toMatchObject({ meta: { readonly: true } });
   });
-
 
   test.each(["places", "video_place_matches", "conflation_review_queue", "youtube_channels", "youtube_videos",
     "place_photos"])("c4 declares the collection %s", async (name) => {

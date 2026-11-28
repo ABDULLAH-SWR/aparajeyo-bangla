@@ -7,6 +7,8 @@ from typing import Protocol
 import boto3
 from botocore.config import Config
 
+from food_shared.config import S3Settings
+
 
 class S3Store(Protocol):
     def put(self, key: str, body: bytes, content_type: str) -> None:
@@ -19,16 +21,14 @@ class S3Store(Protocol):
 
 
 class GarageS3Store:
-    def __init__(
-        self, *, endpoint: str, region: str, bucket: str, access_key: str, secret_key: str
-    ) -> None:
-        self._bucket = bucket
+    def __init__(self, settings: S3Settings) -> None:
+        self._bucket = settings.bucket
         self._client = boto3.client(
             "s3",
-            endpoint_url=endpoint,
-            region_name=region,
-            aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key,
+            endpoint_url=settings.endpoint,
+            region_name=settings.region,
+            aws_access_key_id=settings.access_key,
+            aws_secret_access_key=settings.secret_key,
             config=Config(
                 s3={"addressing_style": "path"},
                 # boto3 >= 1.36 adds checksums by default, which not every S3 server accepts.

@@ -2,6 +2,7 @@
 // Slice 2.10: what the Directus database role may do, connected as that role.
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, inject, test } from "vitest";
+import { ownerDb } from "../support/directus-api";
 import { insertMatch, insertPlace, insertVideo } from "../support/fixtures";
 
 const INSUFFICIENT_PRIVILEGE = "42501";
@@ -12,7 +13,7 @@ let placeId: string;
 
 beforeAll(async () => {
   const settings = inject("directus");
-  owner = postgres(settings.DATABASE_URL_OWNER, { max: 1, onnotice: () => {} });
+  owner = ownerDb();
   const url = new URL(settings.DATABASE_URL_OWNER);
   url.username = "directus_food";
   url.password = settings.DIRECTUS_DB_PASSWORD;

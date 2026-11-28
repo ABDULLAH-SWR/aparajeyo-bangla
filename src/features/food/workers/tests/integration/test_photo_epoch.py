@@ -1,7 +1,6 @@
 """Slice 2.7: the cache epoch moves only when photo sync changed something (R12)."""
 
-from media import FixedClock, mock_commons, run_sync
-from psycopg.types.json import Jsonb
+from media import KACCHI_TAGS, FixedClock, mock_commons, run_sync
 
 from food_shared.cache import EPOCH_KEY
 
@@ -10,7 +9,7 @@ def test_only_a_run_that_added_a_photo_bumps_the_epoch(food_db, valkey_db, media
     food_db.migrate()
     food_db.seed_geo()
     for _ in range(2):  # two new photos in one run still bump once
-        food_db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example kacchi.jpg"}))
+        food_db.insert_place(tags=KACCHI_TAGS)
     mock_commons(http_mock)
     clock = FixedClock()
 

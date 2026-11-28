@@ -5,15 +5,15 @@
 # awake. Ctrl+C releases it; the containers are not stopped.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+source scripts/lib/stack.sh
 
 wsl_distro=${FOOD_WSL_DISTRO:-Ubuntu}
 
 # Git Bash with Docker only inside WSL: run this script there, then hold the VM open from here.
-if ! command -v docker >/dev/null 2>&1 && command -v wsl.exe >/dev/null 2>&1; then
-  windows_dir=$(pwd -W) # C:/dev/...
-  drive=${windows_dir:0:1}
+if docker_only_in_wsl; then
+  wsl_dir=$(wsl_working_dir)
   MSYS_NO_PATHCONV=1 wsl.exe -d "$wsl_distro" -- env FOOD_DEV_KEEPALIVE=0 \
-    bash -c 'cd "$1" && shift && exec bash scripts/dev-up.sh "$@"' dev-up "/mnt/${drive,,}${windows_dir:2}" "$@"
+    bash -c 'cd "$1" && shift && exec bash scripts/dev-up.sh "$@"' dev-up "$wsl_dir" "$@"
   echo "dev-up: keeping WSL awake; press Ctrl+C to release" >&2
   MSYS_NO_PATHCONV=1 exec wsl.exe -d "$wsl_distro" -- sleep infinity
 fi
@@ -83,9 +83,14 @@ env_files+=(--env-file .env.local)
 
 # A new volume starts empty. Migrations and role logins are explicit steps.
 echo "dev-up: then run dbmate up (as DATABASE_URL_OWNER) and scripts/db-bootstrap-roles.sh" >&2
-echo "dev-up: for photos, run scripts/garage-bootstrap.sh once, put its keys in .env.local," \
-  "then run dev-up again" >&2
-echo "dev-up: for Directus, after dbmate and the roles: 'bun scripts/directus-bootstrap.ts register',"   "'docker compose exec directus node cli.js schema apply --yes /directus/food/snapshot.yaml',"   "then 'bun scripts/directus-bootstrap.ts' (the compose files need the same --env-file options)" >&2
+echo "dev-up: for photos, run scripts/garage-bootstrap.sh once, put its keys in .env.local," >&2
+echo "dev-up:   then run dev-up again" >&2
+echo "dev-up: for Directus, after dbmate and the roles (the compose files need the same" >&2
+echo "dev-up:   --env-file options):" >&2
+echo "dev-up:   1. bun scripts/directus-bootstrap.ts register" >&2
+echo "dev-up:   2. docker compose exec directus node cli.js schema apply --yes" \
+  "/directus/food/snapshot.yaml" >&2
+echo "dev-up:   3. bun scripts/directus-bootstrap.ts" >&2
 echo "dev-up: the food-api service holds port 8002; stop it before 'bun run dev'" >&2
 
 docker compose "${env_files[@]}" up -d "$@"

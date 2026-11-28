@@ -1,15 +1,12 @@
 """Slice 2.2: a failed upload writes nothing to the database."""
 
-from media import mock_commons, run_sync, store
-from psycopg.types.json import Jsonb
+from media import mock_commons, one_place, run_sync, store
 
 
 def test_a_refused_upload_leaves_the_place_to_be_retried(
     food_db, valkey_db, media_stack, http_mock
 ):
-    food_db.migrate()
-    food_db.seed_geo()
-    food_db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example kacchi.jpg"}))
+    one_place(food_db)
     mock_commons(http_mock)
     read_only = store(media_stack, "S3_IMGPROXY")  # Garage itself answers AccessDenied
 

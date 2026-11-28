@@ -13,12 +13,13 @@ import boto3
 import httpx
 import psycopg
 import respx
+from psycopg.types.json import Jsonb
 from valkey import Valkey
 
 from food_photo_sync.commons import COMMONS_API, WIKIDATA_API, HttpCommonsClient
 from food_photo_sync.s3_store import GarageS3Store
 from food_photo_sync.sync import sync_photos
-from food_shared.config import FOOD_ROOT
+from food_shared.config import FOOD_ROOT, PHOTO_MAX_BYTES_DEFAULT, S3Settings
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 IMAGEINFO = json.loads((FIXTURES / "commons" / "imageinfo_kacchi.json").read_text(encoding="utf-8"))
@@ -26,6 +27,8 @@ THUMB_URL = IMAGEINFO["query"]["pages"][0]["imageinfo"][0]["thumburl"]
 JPEG = (FOOD_ROOT / "testdata" / "media" / "kacchi.jpg").read_bytes()
 JPEG_SHA256 = hashlib.sha256(JPEG).hexdigest()
 USER_AGENT = "FoodWorkerTests/1.0 (https://example.test)"
+# The tags of a place whose one photo is the recorded file.
+KACCHI_TAGS = Jsonb({"wikimedia_commons": "File:Example kacchi.jpg"})
 
 
 class FixedClock:
@@ -37,6 +40,14 @@ class FixedClock:
 
     def advance(self, **delta: float) -> None:
         self._now += timedelta(**delta)
+
+
+def one_place(db: Any) -> str:
+    """Migrates and seeds the database with one such place. Returns its id."""
+    db.migrate()
+    db.seed_geo()
+    place: str = db.insert_place(tags=KACCHI_TAGS)
+    return place
 
 
 def imageinfo_with(**extmetadata: str | None) -> dict[str, Any]:
@@ -89,11 +100,13 @@ def mock_wikidata_image(router: respx.MockRouter, qid: str, filename: str) -> re
 def store(stack: dict[str, str], key: str = "S3") -> GarageS3Store:
     """The workers' store. key="S3_IMGPROXY" uses the read-only key instead."""
     return GarageS3Store(
-        endpoint=stack["S3_ENDPOINT"],
-        region=stack["S3_REGION"],
-        bucket=stack["S3_BUCKET"],
-        access_key=stack[f"{key}_ACCESS_KEY"],
-        secret_key=stack[f"{key}_SECRET_KEY"],
+        S3Settings(
+            endpoint=stack["S3_ENDPOINT"],
+            region=stack["S3_REGION"],
+            bucket=stack["S3_BUCKET"],
+            access_key=stack[f"{key}_ACCESS_KEY"],
+            secret_key=stack[f"{key}_SECRET_KEY"],
+        )
     )
 
 
@@ -120,7 +133,7 @@ def run_sync(
     *,
     clock: FixedClock | None = None,
     s3: GarageS3Store | None = None,
-    max_bytes: int = 10 * 1024 * 1024,
+    max_bytes: int = PHOTO_MAX_BYTES_DEFAULT,
     limit: int = 10,
     min_interval: float = 0,
 ) -> dict[str, int]:

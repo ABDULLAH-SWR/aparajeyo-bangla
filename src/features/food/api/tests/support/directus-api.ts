@@ -7,13 +7,13 @@ import { z } from "zod";
 
 const BodySchema = z.object({ data: z.unknown().optional() });
 
-export interface DirectusResponse {
+interface DirectusResponse {
   status: number;
   data: unknown;
 }
 
 /** A client that sends `token` with every request. */
-export function directusClient(baseUrl: string, token: string) {
+function directusClient(baseUrl: string, token: string) {
   async function request(method: string, path: string, body?: unknown): Promise<DirectusResponse> {
     const response = await fetch(`${baseUrl}${path}`, {
       method,

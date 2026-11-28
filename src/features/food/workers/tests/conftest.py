@@ -7,6 +7,7 @@ The database fixtures give each test a throwaway PostGIS database built from db/
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import uuid
 from collections.abc import Iterator
@@ -57,14 +58,24 @@ def _square(lng: float, lat: float) -> str:
     return "MULTIPOLYGON(((" + ",".join(f"{x} {y}" for x, y in ring) + ")))"
 
 
-def service_url(variable: str) -> str:
-    """Where a service is. Unset, the test is skipped, but fails in CI, where a skip passes."""
-    url = os.environ.get(variable)
-    if url:
-        return url
+def available(found: str | None, missing: str) -> str:
+    """`found`. Without it the test is skipped, but fails in CI, where a skip passes."""
+    if found:
+        return found
     if os.environ.get("CI"):
-        pytest.fail(f"{variable} is not set")
-    pytest.skip(f"{variable} is not set")
+        pytest.fail(missing)
+    pytest.skip(missing)
+
+
+def service_url(variable: str) -> str:
+    """Where a service is."""
+    return available(os.environ.get(variable), f"{variable} is not set")
+
+
+@pytest.fixture
+def bun() -> str:
+    """The Bun executable."""
+    return available(shutil.which("bun"), "bun is not installed")
 
 
 class FoodDb:

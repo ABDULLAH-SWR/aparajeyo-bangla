@@ -1,24 +1,30 @@
 #!/usr/bin/env bash
-# Prepares Garage for the media pipeline: cluster layout, the food-media bucket, a read+write key
+# Prepares Garage for the media pipeline: cluster layout, the S3_BUCKET bucket, a read+write key
 # for the workers and a read-only key for imgproxy. Safe to run again: what exists is left alone.
 # The IDs and secrets of newly created keys are printed to stdout as NAME=value lines, this one
-# time: store them in the secret manager. GARAGE overrides the garage CLI command.
+# time: store them in the secret manager. GARAGE overrides the garage CLI command; its caller sets
+# S3_BUCKET. For the local stack, an unset S3_BUCKET comes from the env files compose reads.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+source scripts/lib/stack.sh
 
 if [[ -n "${GARAGE:-}" ]]; then
   read -r -a garage_cmd <<<"$GARAGE"
 else
-  # The local stack. Git Bash with Docker only inside WSL: run this script there (see dev-up.sh).
-  if ! command -v docker >/dev/null 2>&1 && command -v wsl.exe >/dev/null 2>&1; then
-    windows_dir=$(pwd -W)
-    drive=${windows_dir:0:1}
-    MSYS_NO_PATHCONV=1 exec wsl.exe -d "${FOOD_WSL_DISTRO:-Ubuntu}" --       bash "/mnt/${drive,,}${windows_dir:2}/scripts/garage-bootstrap.sh"
-  fi
+  # The local stack.
+  reexec_in_wsl scripts/garage-bootstrap.sh
+  env_files=()
+  [[ -f .env ]] && env_files+=(.env)
+  env_files+=(.env.local) # read last, so it wins
   garage_cmd=(docker compose)
-  [[ -f .env ]] && garage_cmd+=(--env-file .env)
-  garage_cmd+=(--env-file .env.local exec -T garage /garage)
+  for file in "${env_files[@]}"; do garage_cmd+=(--env-file "$file"); done
+  garage_cmd+=(exec -T garage /garage)
+  if [[ -z "${S3_BUCKET:-}" ]]; then
+    S3_BUCKET=$(sed -n 's/^S3_BUCKET=//p' "${env_files[@]}" | tail -n 1 | tr -d "\r\"'")
+  fi
 fi
+
+bucket=${S3_BUCKET:?required}
 
 garage() { "${garage_cmd[@]}" "$@" </dev/null; }
 
@@ -31,7 +37,8 @@ if grep -q '^Current cluster layout version: 0$' <<<"$layout"; then
 fi
 
 buckets=$(garage bucket list)
-grep -qE '^[[:space:]]+food-media([[:space:]]|$)' <<<"$buckets" || garage bucket create food-media >&2
+grep -qE "^[[:space:]]+${bucket//./[.]}([[:space:]]|$)" <<<"$buckets" ||
+  garage bucket create "$bucket" >&2
 
 # Garage accepts a second key of the same name, so look before creating.
 keys=$(garage key list)
@@ -45,5 +52,5 @@ create_key() { # key name, variable for the ID, variable for the secret
 create_key food-worker S3_ACCESS_KEY S3_SECRET_KEY
 create_key food-imgproxy S3_IMGPROXY_ACCESS_KEY S3_IMGPROXY_SECRET_KEY
 
-garage bucket allow --read --write food-media --key food-worker >&2
-garage bucket allow --read food-media --key food-imgproxy >&2
+garage bucket allow --read --write "$bucket" --key food-worker >&2
+garage bucket allow --read "$bucket" --key food-imgproxy >&2

@@ -1,4 +1,7 @@
-"""Worker configuration. Nothing has a default; errors name variables, never their values."""
+"""Worker configuration. Errors name variables, never their values.
+
+Nothing has a default except PHOTO_MAX_BYTES (PHOTO_MAX_BYTES_DEFAULT).
+"""
 
 from __future__ import annotations
 
@@ -15,6 +18,8 @@ DATA_DIR = FOOD_ROOT / "data"
 # Whatever GEO_CODES_PATH points at must match the checksum committed beside the vendored file.
 # The API checks the same one.
 GEO_CODES_CHECKSUM = DATA_DIR / "geo_codes.v03.json.sha256"
+# The largest photo the workers mirror; IMGPROXY_MAX_SRC_FILE_SIZE in docker-compose.yml matches.
+PHOTO_MAX_BYTES_DEFAULT = 10 * 1024 * 1024
 
 
 class ConfigError(RuntimeError):
@@ -78,36 +83,55 @@ def load_worker_config(env: Mapping[str, str]) -> WorkerConfig:
 
 
 @dataclass(frozen=True)
+class S3Settings:
+    endpoint: str
+    region: str
+    bucket: str
+    access_key: str
+    secret_key: str
+
+
+def load_s3_settings(env: Mapping[str, str]) -> S3Settings:
+    endpoint, region, bucket, access_key, secret_key = require(
+        env, "S3_ENDPOINT", "S3_REGION", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY"
+    )
+    return S3Settings(
+        endpoint=endpoint,
+        region=region,
+        bucket=bucket,
+        access_key=access_key,
+        secret_key=secret_key,
+    )
+
+
+def _photo_max_bytes(env: Mapping[str, str]) -> int:
+    value = env.get("PHOTO_MAX_BYTES")
+    if not value:
+        return PHOTO_MAX_BYTES_DEFAULT
+    try:
+        return int(value)
+    except ValueError:
+        # `from None`: the cause would quote the value.
+        raise ConfigError("PHOTO_MAX_BYTES must be a whole number of bytes") from None
+
+
+@dataclass(frozen=True)
 class PhotoSyncConfig:
     database_url: str
     valkey_url: str
-    s3: dict[str, str]
-    """The arguments of GarageS3Store."""
+    s3: S3Settings
     user_agent: str
     max_bytes: int
 
 
-S3_VARIABLES = {
-    "endpoint": "S3_ENDPOINT",
-    "region": "S3_REGION",
-    "bucket": "S3_BUCKET",
-    "access_key": "S3_ACCESS_KEY",
-    "secret_key": "S3_SECRET_KEY",
-}
-
-
-def load_s3_settings(env: Mapping[str, str]) -> dict[str, str]:
-    return dict(zip(S3_VARIABLES, require(env, *S3_VARIABLES.values()), strict=True))
-
-
 def load_photo_sync_config(env: Mapping[str, str]) -> PhotoSyncConfig:
-    database_url, valkey_url, user_agent, *_ = require(
-        env, "DATABASE_URL", "VALKEY_URL", "WIKIMEDIA_USER_AGENT", *S3_VARIABLES.values()
+    database_url, valkey_url, user_agent = require(
+        env, "DATABASE_URL", "VALKEY_URL", "WIKIMEDIA_USER_AGENT"
     )
     return PhotoSyncConfig(
         database_url=database_url,
         valkey_url=valkey_url,
         s3=load_s3_settings(env),
         user_agent=user_agent,
-        max_bytes=int(env.get("PHOTO_MAX_BYTES") or 10 * 1024 * 1024),
+        max_bytes=_photo_max_bytes(env),
     )

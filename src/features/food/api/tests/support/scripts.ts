@@ -1,13 +1,9 @@
 /// <reference types="bun" />
 // Runs the repository's bash scripts (src/features/food/scripts) against a test database.
 import { resolveBinary } from "dbmate";
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { FOOD_ROOT } from "./db";
-
-// On Windows, a bare `bash` can resolve to the WSL launcher, which cannot see Windows paths.
-const GIT_BASH = "C:\\Program Files\\Git\\bin\\bash.exe";
-const BASH = process.platform === "win32" && existsSync(GIT_BASH) ? GIT_BASH : "bash";
+import { BASH } from "./stack-script";
 
 const posix = (path: string) => path.replaceAll("\\", "/");
 

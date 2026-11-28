@@ -3,14 +3,7 @@
 import logging
 
 import pytest
-from media import imageinfo_with, mock_commons, run_sync
-from psycopg.types.json import Jsonb
-
-
-def one_place(db) -> str:
-    db.migrate()
-    db.seed_geo()
-    return db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example kacchi.jpg"}))
+from media import imageinfo_with, mock_commons, one_place, run_sync
 
 
 def photos(db) -> list[dict]:

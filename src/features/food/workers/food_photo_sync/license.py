@@ -10,8 +10,9 @@ from typing import Any
 
 from food_photo_sync.rejected import PhotoRejected
 
-# Anchored by fullmatch so NC/ND variants cannot pass on a "CC BY" prefix. Must accept nothing that
-# place_photos_license_chk (migration 0002) refuses.
+# Matched in full, so NC/ND variants cannot pass on a "CC BY" prefix. Must stay identical to the
+# place_photos_license_chk pattern in 0002_place_photos_per_place.sql: purge.py sends it to
+# PostgreSQL, so it must mean the same in both regex dialects.
 ALLOWED_LICENSE = re.compile(
     r"^(CC0( 1\.0)?|Public domain|PD(-[A-Za-z0-9.-]+)?"
     r"|CC BY(-SA)? (1\.0|2\.0|2\.5|3\.0|4\.0)( [a-z]{2,4})?)$"

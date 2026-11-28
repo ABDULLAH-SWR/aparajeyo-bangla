@@ -118,6 +118,8 @@ jobs:
         working-directory: src/features/food/workers
     steps:
       - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: "${{ env.BUN_VERSION }}" }
       - uses: astral-sh/setup-uv@v6
       - run: sudo apt-get update && sudo apt-get install -y osm2pgsql
       - run: docker compose -f docker-compose.test.yml up -d --wait
@@ -128,6 +130,17 @@ jobs:
       # food_hatchet joins this list when Phase 3 adds the package.
       - run: uv run mypy --strict food_shared food_poi_import food_photo_sync food_youtube_index food_video_match food_cache_warm
       - run: uv run pytest -m "unit or integration" --maxfail=1 -q
+      # The API that the photo e2e tests start: contract/ resolves its packages from the feature
+      # root, the API from api/.
+      - run: bun install --frozen-lockfile
+        working-directory: src/features/food
+      - run: bun install --frozen-lockfile
+        working-directory: src/features/food/api
+      # §8.3: photo URLs in API responses are signed imgproxy URLs. The other e2e test needs the
+      # running stack.
+      - run: >-
+          uv run pytest -m e2e tests/e2e/test_photo_served.py tests/e2e/test_photos_listed.py
+          --maxfail=1 -q
 
   compliance:
     runs-on: ubuntu-24.04
@@ -142,6 +155,7 @@ jobs:
       - run: bash scripts/tests/compliance-grep.test.sh
       - run: bash scripts/tests/check-boundary.test.sh
       - run: bash scripts/tests/flake-gate.test.sh
+      - run: bash scripts/tests/garage-bootstrap.test.sh # Slice 2.9: its own Garage, in Docker
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

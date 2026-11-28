@@ -6,8 +6,8 @@
 // it does not track, and when it edits a field it re-issues ALTER TABLE for jsonb and array defaults,
 // which directus_food rightly may not run. So `register` first writes the snapshot's metadata for
 // every table and field (metadata only, no DDL), and apply then finds nothing left to alter.
-// Environment: DIRECTUS_URL, DIRECTUS_ADMIN_EMAIL, DIRECTUS_ADMIN_PASSWORD, and FOOD_INVALIDATE_URL
-// when the API's internal listener is not at the address docker-compose.yml gives it.
+// Environment: DIRECTUS_URL, DIRECTUS_ADMIN_EMAIL, DIRECTUS_ADMIN_PASSWORD, and the stack's
+// FOOD_INTERNAL_PREFIX when it is not the one docker-compose.yml defaults to.
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 
@@ -17,7 +17,8 @@ const EnvSchema = z.object({
   DIRECTUS_URL: z.url(),
   DIRECTUS_ADMIN_EMAIL: z.string().min(1),
   DIRECTUS_ADMIN_PASSWORD: z.string().min(1),
-  FOOD_INVALIDATE_URL: z.url().default("http://172.30.0.10:8003/internal/v1/cache/invalidate"),
+  // The first three octets of the internal subnet. The default equals docker-compose.yml's.
+  FOOD_INTERNAL_PREFIX: z.string().regex(/^\d{1,3}(\.\d{1,3}){2}$/).default("172.30.0"),
 });
 
 const Meta = z.record(z.string(), z.unknown());
@@ -66,7 +67,8 @@ async function register(request: Request): Promise<void> {
   );
 }
 
-const RecordsSchema = z.array(z.object({ id: z.union([z.string(), z.number()]) }));
+const RecordSchema = z.object({ id: z.union([z.string(), z.number()]) });
+const RecordsSchema = z.array(RecordSchema);
 
 const matching = (filter: Record<string, string>) =>
   Object.entries(filter)
@@ -85,7 +87,7 @@ async function upsert(
     await request("PATCH", `${path}/${found.id}`, record);
     return found.id;
   }
-  return z.object({ id: z.union([z.string(), z.number()]) }).parse(await request("POST", path, record)).id;
+  return RecordSchema.parse(await request("POST", path, record)).id;
 }
 
 interface Permission {
@@ -249,5 +251,6 @@ if (command === "register") {
   await register(request);
 } else {
   await grantEditorAccess(request);
-  await installInvalidationFlow(request, env.FOOD_INVALIDATE_URL);
+  // docker-compose.yml gives the API's internal listener the address .10 of the internal subnet.
+  await installInvalidationFlow(request, `http://${env.FOOD_INTERNAL_PREFIX}.10:8003/internal/v1/cache/invalidate`);
 }

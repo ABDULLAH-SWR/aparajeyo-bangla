@@ -2,16 +2,8 @@
 
 from datetime import timedelta
 
-from media import FixedClock, mock_commons, run_sync
+from media import KACCHI_TAGS, FixedClock, mock_commons, one_place, run_sync
 from psycopg.types.json import Jsonb
-
-TAGS = Jsonb({"wikimedia_commons": "File:Example kacchi.jpg"})
-
-
-def one_place(db) -> str:
-    db.migrate()
-    db.seed_geo()
-    return db.insert_place(tags=TAGS)
 
 
 def test_c1_a_synced_place_is_left_alone_for_30_days(food_db, valkey_db, media_stack, http_mock):
@@ -39,10 +31,10 @@ def test_c2_the_longest_waiting_place_goes_first(food_db, valkey_db, media_stack
     clock = FixedClock()
     food_db.insert_place(  # synced 40 days ago, and first by id
         id="00000000-0000-4000-8000-000000000001",
-        tags=TAGS,
+        tags=KACCHI_TAGS,
         photos_synced_at=clock.now() - timedelta(days=40),
     )
-    never = food_db.insert_place(id="00000000-0000-4000-8000-000000000002", tags=TAGS)
+    never = food_db.insert_place(id="00000000-0000-4000-8000-000000000002", tags=KACCHI_TAGS)
     mock_commons(http_mock)
 
     run_sync(food_db, media_stack, valkey_db, clock=clock, limit=1)

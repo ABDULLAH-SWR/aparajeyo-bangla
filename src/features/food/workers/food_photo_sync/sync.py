@@ -193,7 +193,7 @@ def main() -> None:
     load_env_files()
     config = load_photo_sync_config(os.environ)
     commons = HttpCommonsClient(user_agent=config.user_agent, max_bytes=config.max_bytes)
-    s3 = GarageS3Store(**config.s3)
+    s3 = GarageS3Store(config.s3)
     with get_pg_connection(config.database_url) as conn, Valkey.from_url(config.valkey_url) as vk:
         print(json.dumps(sync_photos(conn, s3, commons, SystemClock(), 100, valkey=vk)))
 

@@ -1,13 +1,10 @@
 """Slice 2.1: one Commons file becomes a stored, credited photo."""
 
-from media import JPEG, JPEG_SHA256, mock_commons, run_sync, stored_objects
-from psycopg.types.json import Jsonb
+from media import JPEG, JPEG_SHA256, mock_commons, one_place, run_sync, stored_objects
 
 
 def test_one_commons_file_becomes_a_stored_photo(food_db, valkey_db, media_stack, http_mock):
-    food_db.migrate()
-    food_db.seed_geo()
-    place = food_db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example kacchi.jpg"}))
+    place = one_place(food_db)
     mock_commons(http_mock)
 
     run_sync(food_db, media_stack, valkey_db)

@@ -41,3 +41,10 @@ def test_the_pin_uses_the_first_photo_and_the_detail_has_both(
     assert thumbnail == detail["photos"][0]["thumb_url"]
     assert thumbnail.endswith(f"/{place}/{sha['File:First photo.jpg']}.jpg")
     assert len(detail["photos"]) == 2
+    # §8.3 exit gate: no photo URL in a response is unsigned or points at upload.wikimedia.org.
+    urls = [feature["properties"]["thumbnail_url"] for feature in pins.json()["features"]]
+    urls += [photo[name] for photo in detail["photos"] for name in ("thumb_url", "url")]
+    for url in urls:
+        assert url.startswith(f"{media_stack['IMGPROXY_BASE_URL']}/")
+        assert "upload.wikimedia.org" not in url
+        assert httpx.get(url).status_code == 200  # imgproxy answers 403 to a bad signature

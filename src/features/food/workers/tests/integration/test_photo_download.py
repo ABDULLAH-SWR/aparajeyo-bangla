@@ -4,17 +4,10 @@ import logging
 from collections.abc import Iterator
 
 import httpx
-from media import THUMB_URL, mock_commons, run_sync, stored_objects
-from psycopg.types.json import Jsonb
+from media import THUMB_URL, mock_commons, one_place, run_sync, stored_objects
 
 MIB = 1024 * 1024
 CAP = 10 * MIB
-
-
-def one_place(db) -> str:
-    db.migrate()
-    db.seed_geo()
-    return db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example kacchi.jpg"}))
 
 
 def test_c1_the_2048_px_thumbnail_is_requested_and_downloaded(

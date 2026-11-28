@@ -22,3 +22,8 @@ ENV = {
 def test_a_missing_setting_is_a_config_error_naming_it(name):
     with pytest.raises(ConfigError, match=name):
         load_photo_sync_config({key: value for key, value in ENV.items() if key != name})
+
+
+def test_a_size_cap_that_is_not_a_number_is_a_config_error_naming_it():
+    with pytest.raises(ConfigError, match="PHOTO_MAX_BYTES"):
+        load_photo_sync_config(ENV | {"PHOTO_MAX_BYTES": "10MB"})

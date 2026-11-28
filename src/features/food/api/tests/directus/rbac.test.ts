@@ -29,7 +29,6 @@ describe("the Food Editor", () => {
     expect(place!.is_hidden).toBe(true);
   });
 
-
   test("c2 cannot change an imported name", async () => {
     const response = await editor.patch(`/items/places/${foodId}`, { name_en: "x" });
 
@@ -63,7 +62,6 @@ describe("the Food Editor", () => {
     expect(stored).toEqual({ status: "approved", reviewed_by: editorId, just_now: true });
   });
 
-
   test("c6 cannot mark a match as machine-approved", async () => {
     const videoId = "rbacVideo02";
     await insertVideo(owner, videoId);
@@ -92,7 +90,6 @@ describe("the Food Editor", () => {
     expect(channel!.uploads_playlist_id).toBe(`UU${"r".repeat(22)}`);
   });
 
-
   test("c8 sees no user but their own", async () => {
     const response = await editor.get("/users");
 
@@ -110,7 +107,6 @@ describe("the Food Editor", () => {
 
     expect(response.status).toBe(200);
   });
-
 
   test.each(["youtube_videos", "place_photos", "geo_districts", "geo_upazilas"])(
     "reads %s as context",

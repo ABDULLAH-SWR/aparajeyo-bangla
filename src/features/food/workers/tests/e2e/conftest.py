@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 import socket
 import subprocess
 import time
@@ -23,11 +22,8 @@ def _free_port() -> int:
 
 
 @pytest.fixture
-def start_api(food_db, valkey_db, media_stack) -> Iterator[Callable[[], str]]:
+def start_api(bun, food_db, valkey_db, media_stack) -> Iterator[Callable[[], str]]:
     """Starts the API on demand and returns its base URL."""
-    bun = shutil.which("bun")
-    if bun is None:
-        pytest.skip("bun is not installed")
     processes: list[subprocess.Popen[bytes]] = []
 
     def start() -> str:
@@ -44,6 +40,7 @@ def start_api(food_db, valkey_db, media_stack) -> Iterator[Callable[[], str]]:
             "IMGPROXY_SALT": media_stack["IMGPROXY_SALT"],
             "CORS_ALLOWED_ORIGINS": "http://localhost:3000",
             "FOOD_INTERNAL_BIND_ADDR": "127.0.0.1",
+            "FOOD_INTERNAL_PORT": str(_free_port()),  # a running dev API may hold 8003
             "FOOD_INVALIDATE_TOKEN": "x" * 32,
             "GEO_CODES_PATH": str(FOOD_ROOT / "data" / "geo_codes.v03.json"),
         }

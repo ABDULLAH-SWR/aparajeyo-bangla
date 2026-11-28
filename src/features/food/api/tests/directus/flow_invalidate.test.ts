@@ -2,7 +2,6 @@
 // Slice 2.13: an editor's change reaches the API through the Directus Flow and the internal listener.
 import type postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, inject, test } from "vitest";
-import { z } from "zod";
 import { systemClock } from "../../clock";
 import { startInternalListener } from "../../internal";
 import type { Logger } from "../../logger";
@@ -11,10 +10,6 @@ import { createValkeyCache } from "../../valkey";
 import { adminClient, createEditor, eventually, ownerDb, type DirectusClient } from "../support/directus-api";
 import { directusStack } from "../support/directus-stack";
 import { insertPlace } from "../support/fixtures";
-
-const ComposeSchema = z.object({
-  services: z.record(z.string(), z.object({ ports: z.array(z.object({ target: z.number() })).optional() })),
-});
 
 let owner: postgres.Sql;
 let editor: DirectusClient;
@@ -112,12 +107,22 @@ describe("the internal listener", () => {
 });
 
 describe("the compose file", () => {
+  const composeConfig = () => directusStack(inject("directusProject")).composeConfig();
+
   test("c3 publishes no host port for the internal listener", async () => {
-    const config = ComposeSchema.parse(JSON.parse(await directusStack(inject("directusProject")).run("config")));
+    const config = await composeConfig();
     const published = Object.values(config.services).flatMap((service) => service.ports ?? []);
 
     // loadConfig's refusal of 0.0.0.0 and :: is covered by tests/config.test.ts (c6).
     expect(published.length).toBeGreaterThan(0);
     expect(published.filter((port) => port.target === 8003)).toEqual([]);
+  });
+
+  // §8.3 review item: the API only signs URLs.
+  test("gives the API no S3 credentials", async () => {
+    const names = Object.keys((await composeConfig()).services["food-api"]?.environment ?? {});
+
+    expect(names).toContain("S3_BUCKET"); // the environment was read
+    expect(names.filter((name) => /^(AWS_|S3_IMGPROXY_|S3_ACCESS_KEY$|S3_SECRET_KEY$)/.test(name))).toEqual([]);
   });
 });

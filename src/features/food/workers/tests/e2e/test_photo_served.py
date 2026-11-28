@@ -2,8 +2,7 @@
 
 import httpx
 import respx
-from media import mock_commons, run_sync
-from psycopg.types.json import Jsonb
+from media import KACCHI_TAGS, mock_commons, run_sync
 
 from food_shared.config import FOOD_ROOT
 
@@ -14,7 +13,7 @@ API_GEO = FOOD_ROOT / "db" / "seeds" / "test_geo.sql"
 def test_the_detail_thumbnail_is_served_as_webp(food_db, valkey_db, media_stack, start_api):
     food_db.migrate()
     food_db.conn.execute(API_GEO.read_text(encoding="utf-8"))
-    place = food_db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example kacchi.jpg"}))
+    place = food_db.insert_place(tags=KACCHI_TAGS)
     with respx.mock(assert_all_mocked=True) as commons:
         mock_commons(commons)
         run_sync(food_db, media_stack, valkey_db)

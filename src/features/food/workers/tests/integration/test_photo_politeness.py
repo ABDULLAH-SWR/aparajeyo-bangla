@@ -3,18 +3,11 @@
 import time
 
 import httpx
-from media import IMAGEINFO, JPEG, THUMB_URL, USER_AGENT, mock_commons, run_sync
-from psycopg.types.json import Jsonb
+from media import IMAGEINFO, JPEG, THUMB_URL, USER_AGENT, mock_commons, one_place, run_sync
 
 from food_photo_sync.commons import COMMONS_API
 
 MAXLAG = {"error": {"code": "maxlag", "info": "Waiting for a database server: 6 seconds lagged."}}
-
-
-def one_place(db) -> None:
-    db.migrate()
-    db.seed_geo()
-    db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example kacchi.jpg"}))
 
 
 def test_a_lagged_answer_is_retried_after_the_requested_pause(
