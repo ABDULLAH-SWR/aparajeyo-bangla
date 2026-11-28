@@ -1,7 +1,7 @@
 /// <reference types="bun" />
 // PostGIS test harness. Each test file gets its own database, migrated by dbmate.
 //   default                  start a postgis testcontainer
-//   FOOD_TEST_USE_COMPOSE=1  use the running server at DATABASE_URL_OWNER (role needs CREATEDB)
+//   FOOD_TEST_USE_COMPOSE=1  use the running server of docker-compose.test.yml (see compose.ts)
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
 import { resolveBinary } from "dbmate";
 import { randomBytes } from "node:crypto";
@@ -9,21 +9,17 @@ import { copyFileSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "no
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import postgres from "postgres";
+import { COMPOSE_PG_URL, USE_COMPOSE } from "./compose";
 
 export const FOOD_ROOT = resolve(import.meta.dir, "../../..");
 const MIGRATIONS_DIR = join(FOOD_ROOT, "db", "migrations");
-export const USE_COMPOSE = process.env.FOOD_TEST_USE_COMPOSE === "1";
 const IMAGE = "postgis/postgis:17-3.5"; // must equal the compose `postgres` image tag
 
 let server: Promise<string> | undefined;
 
 function serverUrl(): Promise<string> {
   server ??= (async () => {
-    if (USE_COMPOSE) {
-      const url = process.env.DATABASE_URL_OWNER;
-      if (!url) throw new Error("FOOD_TEST_USE_COMPOSE=1 needs DATABASE_URL_OWNER");
-      return url;
-    }
+    if (USE_COMPOSE) return COMPOSE_PG_URL;
     const container = await new PostgreSqlContainer(IMAGE).start();
     return `${container.getConnectionUri()}?sslmode=disable`;
   })();

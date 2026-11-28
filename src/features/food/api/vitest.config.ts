@@ -2,13 +2,32 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    // One worker per core exhausts memory on small machines. The isolation pair needs at least 2.
+    maxWorkers: 4,
     projects: [
+      {
+        // No containers.
+        test: {
+          name: "unit",
+          include: [
+            "tests/contract/{mocks,gen_enums}.test.ts",
+            "tests/{config.test.ts,client/constants.test.ts}",
+            "tests/media/**/*.test.ts",
+          ],
+        },
+      },
       {
         test: {
           name: "integration",
           // tests/repo runs under `bun test` (see package.json).
-          include: ["tests/*.test.ts", "tests/{http,cache,media,client}/**/*.test.ts"],
+          include: [
+            "tests/boot.test.ts",
+            "tests/{http,cache,harness}/**/*.test.ts",
+            "tests/client/food_service.test.ts",
+            "tests/contract/enum_parity.test.ts",
+          ],
           globalSetup: ["tests/support/global-setup.ts"],
+          setupFiles: ["tests/support/setup.ts"],
           testTimeout: 30_000,
           hookTimeout: 120_000,
         },

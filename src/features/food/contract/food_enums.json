@@ -1,0 +1,43 @@
+{
+  "categories": [
+    "restaurant",
+    "street_food",
+    "cafe",
+    "tea_stall",
+    "sweets_bakery",
+    "fast_food",
+    "food_court",
+    "dessert",
+    "other"
+  ],
+  "cuisines": [
+    "bangladeshi",
+    "biryani_kacchi",
+    "fish_seafood",
+    "kebab_grill",
+    "pitha",
+    "mishti",
+    "chinese_thai",
+    "indian",
+    "western",
+    "other"
+  ],
+  "place_sources": [
+    "osm",
+    "overture"
+  ],
+  "photo_sources": [
+    "wikimedia",
+    "ugc"
+  ],
+  "error_codes": [
+    "INVALID_ID",
+    "INVALID_DISTRICT",
+    "INVALID_BBOX",
+    "INVALID_CATEGORY",
+    "INVALID_QUERY",
+    "FOOD_PLACE_NOT_FOUND",
+    "NOT_FOUND",
+    "INTERNAL_ERROR"
+  ]
+}

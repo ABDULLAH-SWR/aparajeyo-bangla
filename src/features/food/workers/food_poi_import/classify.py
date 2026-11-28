@@ -64,8 +64,9 @@ def classify_overture_row(row: dict, cmap: dict) -> tuple[str | None, list[str]]
             category = ovt_map[c]
             break
 
-    if not category and "eat_and_drink" in hierarchy:
-        category = "other"
+    if not category:
+        fallback = cmap["overture_fallback_map"]
+        category = next((fallback[h] for h in hierarchy if h in fallback), None)
 
     if not category:
         return None, []

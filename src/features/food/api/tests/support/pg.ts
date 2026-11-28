@@ -1,23 +1,40 @@
-// A throwaway database per test file, cloned from the migrated template.
-import { randomBytes } from "node:crypto";
+// The database of the running test file. setup.ts clones it from the migrated, seeded template.
 import postgres from "postgres";
 import { inject } from "vitest";
+import { buildTestDeps } from "./deps";
 
-export async function createFileDb() {
-  const name = `food_t_${randomBytes(6).toString("hex")}`;
+async function asAdmin(...statements: string[]): Promise<void> {
   const admin = postgres(inject("pgServerUrl"), { max: 1, onnotice: () => {} });
-  await admin.unsafe(`CREATE DATABASE ${name} TEMPLATE ${inject("pgTemplate")}`);
-  const url = new URL(inject("pgServerUrl"));
-  url.pathname = `/${name}`;
-  const sql = postgres(url.toString(), { max: 2, onnotice: () => {} });
-
-  async function drop(): Promise<void> {
-    await sql.end();
-    await admin.unsafe(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
+  try {
+    for (const statement of statements) await admin.unsafe(statement);
+  } finally {
     await admin.end();
   }
+}
 
-  return { url: url.toString(), sql, drop };
+const drop = (name: string) => `DROP DATABASE IF EXISTS ${name} WITH (FORCE)`;
+
+export const dropDatabase = (name: string) => asAdmin(drop(name));
+
+/** Returns the new database's URL. A leftover of the same name from a killed run is replaced. */
+export async function cloneTemplate(name: string): Promise<string> {
+  await asAdmin(drop(name), `CREATE DATABASE ${name} TEMPLATE ${inject("pgTemplate")}`);
+  const url = new URL(inject("pgServerUrl"));
+  url.pathname = `/${name}`;
+  return url.toString();
+}
+
+/** A connection to this file's database. `drop` is optional: setup.ts also drops it. */
+export async function createFileDb() {
+  const { databaseUrl } = buildTestDeps();
+  const sql = postgres(databaseUrl, { max: 2, onnotice: () => {} });
+
+  async function close(): Promise<void> {
+    await sql.end();
+    await dropDatabase(new URL(databaseUrl).pathname.slice(1));
+  }
+
+  return { url: databaseUrl, sql, drop: close };
 }
 
 export type FileDb = Awaited<ReturnType<typeof createFileDb>>;

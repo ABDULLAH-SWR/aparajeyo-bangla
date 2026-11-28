@@ -1,0 +1,35 @@
+# Disposable servers for FOOD_TEST_USE_COMPOSE=1:
+#   docker compose -f docker-compose.test.yml up -d --wait
+# The ports and container name must equal api/tests/support/compose.ts.
+# The explicit project name keeps this file from replacing the services of docker-compose.yml.
+name: aparajeyo-food-test
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: aparajeyo-food-test-postgres
+    environment:
+      POSTGRES_USER: food
+      # No password to commit. Safe only because the port is bound to loopback.
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "127.0.0.1:55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      # Over TCP: the temporary server that runs during first-time setup listens on a socket only.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U food"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    container_name: aparajeyo-food-test-valkey
+    ports:
+      - "127.0.0.1:56379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

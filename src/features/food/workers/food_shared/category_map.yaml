@@ -48,6 +48,10 @@ overture_category_map:
   street_vendor: street_food
   street_food: street_food
 
+# Applied to the taxonomy hierarchy only when nothing in overture_category_map matched.
+overture_fallback_map:
+  eat_and_drink: other
+
 tea_keywords:
   - tea
   - cha

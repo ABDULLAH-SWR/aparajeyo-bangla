@@ -3,3 +3,9 @@
 # dbmate migrations stay LF on every checkout.
 *.sql text eol=lf
 data/geo_codes.v03.json* -text
+# Vendored contract files must stay byte-identical to the contract on every checkout.
+types.ts -text
+testdata/contract_mocks/*.json -text
+contract.lock text eol=lf
+# Generated, and compared byte for byte by gen:enums --check.
+contract/food_enums.json text eol=lf

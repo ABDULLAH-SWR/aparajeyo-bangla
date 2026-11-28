@@ -14,6 +14,7 @@ let db: FileDb;
 
 beforeAll(async () => {
   db = await createFileDb();
+  await db.sql`DELETE FROM sync_runs`; // the template carries one succeeded import; c2 needs none
   await seedGeo(db.sql);
   await insertPlace(db.sql);
 });

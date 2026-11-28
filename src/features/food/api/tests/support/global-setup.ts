@@ -1,19 +1,24 @@
 // Vitest globalSetup: one PostGIS server and one Valkey server for the run.
 //   default                  start testcontainers
-//   FOOD_TEST_USE_COMPOSE=1  use the running servers at DATABASE_URL_OWNER (role needs CREATEDB) and VALKEY_URL
-// Migrations run once into a template database; each test file clones it (see pg.ts).
+//   FOOD_TEST_USE_COMPOSE=1  use the running servers of docker-compose.test.yml (see compose.ts)
+// Migrations and db/seeds/test_base.sql load once into a template database; setup.ts clones it for
+// each test file.
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
 import { resolveBinary } from "dbmate";
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { resolve } from "node:path";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import postgres from "postgres";
 import { GenericContainer, Wait } from "testcontainers";
 import type { TestProject } from "vitest/node";
+import { COMPOSE_PG_URL, COMPOSE_VALKEY_URL, USE_COMPOSE } from "./compose";
 
 const MIGRATIONS_DIR = resolve(fileURLToPath(import.meta.url), "../../../../db/migrations");
+const BASE_SEED = resolve(MIGRATIONS_DIR, "../seeds/test_base.sql");
 const POSTGIS_IMAGE = "postgis/postgis:17-3.5"; // must equal the compose `postgres` image tag
 const VALKEY_IMAGE = "valkey/valkey:8.1-alpine"; // must equal the compose `valkey` image tag
 
@@ -22,24 +27,19 @@ declare module "vitest" {
     pgServerUrl: string;
     pgTemplate: string;
     valkeyUrl: string;
+    /** Scratch directory shared by the test files of one run. */
+    runDir: string;
   }
 }
 
-function required(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`FOOD_TEST_USE_COMPOSE=1 needs ${name}`);
-  return value;
-}
-
 export default async function setup(project: TestProject) {
-  const useCompose = process.env.FOOD_TEST_USE_COMPOSE === "1";
   const stops: Array<() => Promise<unknown>> = [];
 
   let pgServerUrl: string;
   let valkeyUrl: string;
-  if (useCompose) {
-    pgServerUrl = required("DATABASE_URL_OWNER");
-    valkeyUrl = required("VALKEY_URL");
+  if (USE_COMPOSE) {
+    pgServerUrl = COMPOSE_PG_URL;
+    valkeyUrl = COMPOSE_VALKEY_URL;
   } else {
     const pg = await new PostgreSqlContainer(POSTGIS_IMAGE).start();
     const valkey = await new GenericContainer(VALKEY_IMAGE)
@@ -60,6 +60,12 @@ export default async function setup(project: TestProject) {
     "--url", templateUrl.toString(), "--migrations-dir", MIGRATIONS_DIR, "--no-dump-schema", "up", "--strict",
   ]);
 
+  const seed = postgres(templateUrl.toString(), { max: 1, onnotice: () => {} });
+  await seed.unsafe(readFileSync(BASE_SEED, "utf8"));
+  await seed.end(); // a template cannot be cloned while anything is connected to it
+  const runDir = mkdtempSync(join(tmpdir(), "food-test-run-"));
+
+  project.provide("runDir", runDir);
   project.provide("pgServerUrl", pgServerUrl);
   project.provide("pgTemplate", template);
   project.provide("valkeyUrl", valkeyUrl);
@@ -68,5 +74,6 @@ export default async function setup(project: TestProject) {
     await admin.unsafe(`DROP DATABASE IF EXISTS ${template} WITH (FORCE)`);
     await admin.end();
     for (const stop of stops) await stop();
+    rmSync(runDir, { recursive: true, force: true });
   };
 }

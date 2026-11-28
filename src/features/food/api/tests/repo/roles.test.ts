@@ -1,7 +1,8 @@
 /// <reference types="bun" />
 import { afterAll, beforeAll, expect, setDefaultTimeout, test } from "bun:test";
 import postgres from "postgres";
-import { createTestDb, type TestDb, USE_COMPOSE } from "../support/db";
+import { USE_COMPOSE } from "../support/compose";
+import { createTestDb, type TestDb } from "../support/db";
 import { insertPhoto, insertPlace, seedGeo } from "../support/fixtures";
 import { runScript } from "../support/scripts";
 
@@ -69,7 +70,8 @@ test("food_worker cannot change administrative boundaries", async () => {
   await expect(update).rejects.toMatchObject({ code: INSUFFICIENT_PRIVILEGE });
 });
 
-// Role passwords are cluster-wide, so this never runs against a developer's compose server.
+// The compose test server trusts every local connection, so a login there proves nothing about
+// the passwords.
 test.skipIf(USE_COMPOSE)("bootstrap script lets both roles log in", async () => {
   const passwords = { food_api: `api-${crypto.randomUUID()}`, food_worker: `w-${crypto.randomUUID()}` };
 
