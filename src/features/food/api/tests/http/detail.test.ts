@@ -2,14 +2,14 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinDetailSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
 import { DHAKA, DHANMONDI, insertMatch, insertPhoto, insertPlace, insertVideo } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 
 let db: FileDb;
 let t: TestApp;
 let placeId: string;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   placeId = await insertPlace(db.sql, {
     district_id: DHAKA,
     upazila_id: DHANMONDI,
@@ -28,7 +28,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await t.close();
-  await db.drop();
+  await db.close();
 });
 
 const getDetail = (id: string) => t.app.request(`/api/v1/pins/food/${id}`);

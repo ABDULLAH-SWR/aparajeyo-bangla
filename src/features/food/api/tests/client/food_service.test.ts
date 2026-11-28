@@ -5,7 +5,7 @@ import { createFoodService, FoodApiError } from "../../../foodService";
 import type { FoodCategory } from "../../../types";
 import { createTestApp, type TestApp } from "../support/app";
 import { DHAKA, insertImportRun, insertPlace } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 
 const BASE_URL = "http://food.example.test";
 
@@ -14,7 +14,7 @@ let t: TestApp;
 let zinda: string;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   zinda = await insertPlace(db.sql, { district_id: DHAKA, name_en: "Zinda Kebab" });
   await insertPlace(db.sql, { district_id: DHAKA, name_en: "Anna Sweets", category: "cafe" });
   await insertImportRun(db.sql);
@@ -23,7 +23,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await t.close();
-  await db.drop();
+  await db.close();
 });
 
 test("getFoodPins returns the contract collection the API serves", async () => {

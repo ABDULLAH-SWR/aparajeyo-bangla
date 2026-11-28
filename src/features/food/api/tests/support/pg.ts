@@ -24,17 +24,12 @@ export async function cloneTemplate(name: string): Promise<string> {
   return url.toString();
 }
 
-/** A connection to this file's database. `drop` is optional: setup.ts also drops it. */
-export async function createFileDb() {
+/** A connection to this file's database. `close` ends the pool; setup.ts drops the database. */
+export function connectFileDb() {
   const { databaseUrl } = buildTestDeps();
   const sql = postgres(databaseUrl, { max: 2, onnotice: () => {} });
 
-  async function close(): Promise<void> {
-    await sql.end();
-    await dropDatabase(new URL(databaseUrl).pathname.slice(1));
-  }
-
-  return { url: databaseUrl, sql, drop: close };
+  return { url: databaseUrl, sql, close: () => sql.end() };
 }
 
-export type FileDb = Awaited<ReturnType<typeof createFileDb>>;
+export type FileDb = ReturnType<typeof connectFileDb>;

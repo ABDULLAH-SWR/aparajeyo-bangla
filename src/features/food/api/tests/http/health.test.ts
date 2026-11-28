@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { CLOSED_DATABASE_URL, createTestApp, type TestAppOptions } from "../support/app";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 import { insertImportRun } from "../support/fixtures";
 import { createFileValkey, type FileValkey } from "../support/valkey";
 
@@ -8,7 +8,7 @@ let db: FileDb;
 let valkey: FileValkey;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   valkey = await createFileValkey(11);
   await insertImportRun(db.sql, "2026-11-30T19:00:00Z");
   await valkey.client.set("food:epoch", "7");
@@ -16,7 +16,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await valkey.drop();
-  await db.drop();
+  await db.close();
 });
 
 async function getHealth(options: TestAppOptions) {

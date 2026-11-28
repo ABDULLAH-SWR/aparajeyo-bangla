@@ -5,7 +5,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { afterAll, afterEach, beforeAll, expect, inject, test } from "vitest";
-import { createFileDb, type FileDb } from "./support/pg";
+import { connectFileDb, type FileDb } from "./support/pg";
 import { insertImportRun } from "./support/fixtures";
 import { validEnv, without } from "./support/env";
 
@@ -16,14 +16,14 @@ let db: FileDb;
 let child: ChildProcess | null = null;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   await insertImportRun(db.sql);
 });
 afterEach(() => {
   child?.kill();
   child = null;
 });
-afterAll(() => db.drop());
+afterAll(() => db.close());
 
 async function freePort(): Promise<number> {
   const probe = createServer().listen(0, "127.0.0.1");

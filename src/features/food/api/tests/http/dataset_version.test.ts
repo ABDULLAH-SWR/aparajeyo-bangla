@@ -2,7 +2,7 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { createTestApp } from "../support/app";
 import { fixedClock } from "../support/clock";
 import { insertImportRun, insertPlace } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 
 const PINS = "/api/v1/pins?overlay=food&district_id=BD3026";
 // Already 1 December in Dhaka; the clock still says 30 November everywhere.
@@ -12,12 +12,12 @@ const NOW = Date.parse("2026-11-30T12:00:00Z");
 let db: FileDb;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   await db.sql`DELETE FROM sync_runs`; // the template carries one succeeded import; c2 needs none
   await insertPlace(db.sql);
 });
 
-afterAll(() => db.drop());
+afterAll(() => db.close());
 
 async function getPins() {
   const t = createTestApp({ databaseUrl: db.url, clock: fixedClock(NOW) });

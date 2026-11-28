@@ -2,7 +2,7 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
 import { insertImportRun, insertMatch, insertPlace, insertVideo } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 
 let db: FileDb;
 let t: TestApp;
@@ -10,7 +10,7 @@ let featured: string;
 let filmed: string;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   await insertImportRun(db.sql);
   // Names put the filmed place first alphabetically, so only the featured flag can order it second.
   filmed = await insertPlace(db.sql, { name_en: "A Filmed Cafe" });
@@ -23,7 +23,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await t.close();
-  await db.drop();
+  await db.close();
 });
 
 async function getNational() {

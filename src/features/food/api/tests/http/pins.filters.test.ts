@@ -3,7 +3,7 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
 import { insertImportRun, insertMatch, insertPlace, insertVideo } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 import { createFileValkey, type FileValkey } from "../support/valkey";
 
 const DISTRICT = "overlay=food&district_id=BD3026";
@@ -15,7 +15,7 @@ let cafe: string;
 let teaStall: string;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   valkey = await createFileValkey(12);
   await insertImportRun(db.sql);
   cafe = await insertPlace(db.sql, { name_en: "A Cafe", category: "cafe" });
@@ -29,7 +29,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await t.close();
   await valkey.drop();
-  await db.drop();
+  await db.close();
 });
 
 async function getPins(query: string) {

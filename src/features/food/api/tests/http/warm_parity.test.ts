@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { createTestApp, type TestApp } from "../support/app";
 import { insertImportRun, insertPlace } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 import { createFileValkey, type FileValkey } from "../support/valkey";
 
 let db: FileDb;
@@ -11,7 +11,7 @@ let valkey: FileValkey;
 let t: TestApp;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   valkey = await createFileValkey(9);
   await insertPlace(db.sql);
   await insertImportRun(db.sql);
@@ -21,7 +21,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await t.close();
   await valkey.drop();
-  await db.drop();
+  await db.close();
 });
 
 async function getPins() {

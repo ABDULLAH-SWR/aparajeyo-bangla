@@ -4,7 +4,7 @@ import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
 import { fixedClock } from "../support/clock";
 import { insertImportRun, insertPlace } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 import { createFileValkey, type FileValkey } from "../support/valkey";
 
 const PINS = "/api/v1/pins?overlay=food&district_id=BD3026";
@@ -16,7 +16,7 @@ let t: TestApp;
 let placeId: string;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   valkey = await createFileValkey(8);
   placeId = await insertPlace(db.sql, { name_en: "Old Name" });
   await insertImportRun(db.sql);
@@ -26,7 +26,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await t.close();
   await valkey.drop();
-  await db.drop();
+  await db.close();
 });
 
 async function getPins(app: TestApp = t) {

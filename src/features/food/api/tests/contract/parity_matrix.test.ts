@@ -5,14 +5,14 @@ import { ApiErrorResponseSchema } from "../../../contract/schemas";
 import { CONTRACT_MATRIX, PLACE_ID, type MatrixRow } from "../../../testdata/contract_matrix";
 import { CLOSED_DATABASE_URL, createTestApp, type TestApp } from "../support/app";
 import { insertMatch, insertPhoto, insertPlace, insertVideo } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 
 let db: FileDb;
 let up: TestApp;
 let down: TestApp;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   await insertPlace(db.sql, { id: PLACE_ID, category: "tea_stall", geom: "SRID=4326;POINT(90.4 23.72)" });
   await insertPhoto(db.sql, PLACE_ID);
   await insertVideo(db.sql, "dQw4w9WgXcQ");
@@ -24,7 +24,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await up.close();
   await down.close();
-  await db.drop();
+  await db.close();
 });
 
 const label = (row: MatrixRow) =>

@@ -4,7 +4,7 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
 import { insertImportRun, insertPlace } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 import { createFileValkey, type FileValkey } from "../support/valkey";
 
 const OLD_DHAKA = "90.39,23.70,90.41,23.73";
@@ -17,7 +17,7 @@ let inside: string;
 let sameTile: string;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   valkey = await createFileValkey(13);
   await insertImportRun(db.sql);
   const at = (name_en: string, lng: number) =>
@@ -31,7 +31,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await t.close();
   await valkey.drop();
-  await db.drop();
+  await db.close();
 });
 
 async function getPins(bbox: string) {

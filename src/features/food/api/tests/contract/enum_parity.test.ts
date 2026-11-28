@@ -1,10 +1,10 @@
 // The SQL CHECK constraints accept exactly the values of the TypeScript enum tuples.
 import { afterAll, expect, test } from "vitest";
 import { FOOD_CATEGORIES, FOOD_CUISINES } from "../../../contract/enums";
-import { createFileDb } from "../support/pg";
+import { connectFileDb } from "../support/pg";
 
-const db = await createFileDb();
-afterAll(() => db.drop());
+const db = connectFileDb();
+afterAll(() => db.close());
 
 /** The string literals of the constraint's ARRAY[...] list, as Postgres reports it. */
 async function allowedBy(constraint: string): Promise<string[]> {

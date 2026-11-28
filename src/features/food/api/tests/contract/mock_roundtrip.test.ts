@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { createImgproxySigner } from "../../imgproxy";
 import { createTestApp, type TestApp } from "../support/app";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 
 const SEED = new URL("../../../db/seeds/from_mocks.sql", import.meta.url);
 const mock = (name: string) =>
@@ -27,14 +27,14 @@ let db: FileDb;
 let t: TestApp;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   await db.sql.unsafe(readFileSync(SEED, "utf8"));
   t = createTestApp({ databaseUrl: db.url, signer });
 });
 
 afterAll(async () => {
   await t?.close();
-  await db?.drop();
+  await db?.close();
 });
 
 async function get(path: string) {

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
 import { DHAKA, insertDistrict, insertImportRun, insertPlace } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 
 const CHATTOGRAM = "BD2015";
 
@@ -11,7 +11,7 @@ let t: TestApp;
 let expectedIds: string[];
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   await insertDistrict(db.sql, CHATTOGRAM, "Chattogram");
   const zinda = await insertPlace(db.sql, { district_id: DHAKA, name_en: "Zinda Kebab" });
   const anna = await insertPlace(db.sql, { district_id: DHAKA, name_en: "Anna Sweets" });
@@ -24,7 +24,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await t.close();
-  await db.drop();
+  await db.close();
 });
 
 test("returns a contract-valid FeatureCollection for BD3026", async () => {

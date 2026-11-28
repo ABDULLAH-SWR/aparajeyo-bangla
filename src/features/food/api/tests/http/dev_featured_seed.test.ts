@@ -3,7 +3,7 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
 import { insertDistrict, insertImportRun, insertPlace } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 
 const SEED = new URL("../../../db/seeds/dev_featured.sql", import.meta.url);
 const DISTRICTS = ["BD2015", "BD3026", "BD5010", "BD6091"];
@@ -12,7 +12,7 @@ let db: FileDb;
 let t: TestApp;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   await insertDistrict(db.sql, "BD2015", "Chattogram");
   await insertDistrict(db.sql, "BD6091", "Sylhet");
   await insertImportRun(db.sql);
@@ -25,7 +25,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await t.close();
-  await db.drop();
+  await db.close();
 });
 
 test("the dev seed features 3 visible places per demo district, however often it runs", async () => {

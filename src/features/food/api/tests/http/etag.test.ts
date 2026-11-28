@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { createTestApp, type TestApp } from "../support/app";
 import { insertImportRun, insertPlace } from "../support/fixtures";
-import { createFileDb, type FileDb } from "../support/pg";
+import { connectFileDb, type FileDb } from "../support/pg";
 
 const PINS = "/api/v1/pins?overlay=food&district_id=BD3026";
 const ORIGIN = "https://map.example.test";
@@ -10,7 +10,7 @@ let db: FileDb;
 let t: TestApp;
 
 beforeAll(async () => {
-  db = await createFileDb();
+  db = connectFileDb();
   await insertPlace(db.sql);
   await insertImportRun(db.sql);
   t = createTestApp({ databaseUrl: db.url });
@@ -18,7 +18,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await t.close();
-  await db.drop();
+  await db.close();
 });
 
 test("c1 a repeat request with If-None-Match returns an empty 304", async () => {
