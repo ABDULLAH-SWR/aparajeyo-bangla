@@ -3,8 +3,6 @@ pg_trgm similarity."""
 
 from __future__ import annotations
 
-from typing import Any
-
 import psycopg
 from psycopg.rows import DictRow
 
@@ -179,7 +177,7 @@ def conflate_osm_and_overture(cur: psycopg.Cursor[DictRow]) -> dict[str, int]:
     return dict(counts)
 
 
-def backfill_merged_into(conn: psycopg.Connection[Any]) -> int:
+def backfill_merged_into(conn: psycopg.Connection[DictRow]) -> int:
     """Recomputes survivor -> loser pairs from merged_source_ids (Slice 0B.8)."""
     with conn.cursor() as cur:
         cur.execute(

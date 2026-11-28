@@ -48,7 +48,7 @@ export function validateMocks(mocksDir: string, geoCodesFile = GEO_CODES): MockV
     try {
       mock = JSON.parse(readFileSync(join(mocksDir, file), "utf8"));
     } catch (error) {
-      report("c1", `invalid JSON: ${(error as Error).message}`);
+      report("c1", `invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
       continue;
     }
     const isPins = file.endsWith(".geojson.json");
