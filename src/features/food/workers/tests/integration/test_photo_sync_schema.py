@@ -38,8 +38,8 @@ def test_two_places_sharing_a_commons_file_each_get_a_photo(food_db, fake_common
     a = food_db.insert_place(tags=tags)
     b = food_db.insert_place(tags=tags)
 
-    sync_photos()
-    sync_photos()  # idempotent
+    sync_photos(food_db.url)
+    sync_photos(food_db.url)  # idempotent
 
     rows = food_db.conn.execute("SELECT place_id::text AS id FROM place_photos").fetchall()
     assert sorted(r["id"] for r in rows) == sorted([a, b])
@@ -51,7 +51,7 @@ def test_sync_leaves_the_derived_key_array_to_the_database(food_db, fake_commons
     place = food_db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example.jpg"}))
     older = food_db.insert_photo(place, "CC BY 4.0", "1" * 64)
 
-    sync_photos()
+    sync_photos(food_db.url)
 
     keys = food_db.conn.execute("SELECT wikimedia_s3_keys AS keys FROM places").fetchone()["keys"]
     assert len(keys) == 2
@@ -68,7 +68,7 @@ def test_a_failed_wikimedia_call_is_logged_and_counted(food_db, fake_commons, mo
     food_db.insert_place(tags=Jsonb({"wikimedia_commons": "File:Example.jpg"}))
     food_db.insert_place(tags=Jsonb({"wikidata": "Q1"}))
 
-    result = sync_photos()
+    result = sync_photos(food_db.url)
 
     assert result["skipped"] == 2
     assert result["errors"] == 2

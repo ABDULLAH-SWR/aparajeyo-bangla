@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import uuid
 from datetime import datetime
 
@@ -11,11 +10,6 @@ import psycopg
 from psycopg.rows import DictRow, dict_row
 
 from food_shared.clock import BST
-from food_shared.config import FOOD_ROOT, load_env_files, require
-
-DATA_DIR = FOOD_ROOT / "data"
-
-load_env_files()
 
 
 def now_bst_iso() -> str:
@@ -30,8 +24,5 @@ def stable_uuid_v4(source: str, source_id: str) -> str:
     return str(uuid.UUID(bytes=bytes(digest)))
 
 
-def get_pg_connection(database_url: str | None = None) -> psycopg.Connection[DictRow]:
-    """Connects to `database_url`, or to DATABASE_URL, which has no default."""
-    if database_url is None:
-        (database_url,) = require(os.environ, "DATABASE_URL")
+def get_pg_connection(database_url: str) -> psycopg.Connection[DictRow]:
     return psycopg.Connection[DictRow].connect(database_url, row_factory=dict_row, autocommit=False)

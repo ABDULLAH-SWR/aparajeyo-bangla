@@ -4,14 +4,19 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import zipfile
 
 import httpx
 import shapely
 from shapely.geometry import MultiPolygon, Polygon, shape
 
-from food_shared.db import DATA_DIR
+from food_shared.config import DATA_DIR
 
+log = logging.getLogger(__name__)
+
+ADM2_COUNT = 64
+ADM3_COUNT = 507
 BOUNDARY_DIR = DATA_DIR / "boundaries"
 ADM2_PATH = BOUNDARY_DIR / "bgd_admin2.geojson"
 ADM3_PATH = BOUNDARY_DIR / "bgd_admin3.geojson"
@@ -36,27 +41,42 @@ def _counts(cur) -> tuple[int, int]:
     return row["d"], row["u"]
 
 
+def _download_boundaries() -> None:
+    if ADM2_PATH.exists() and ADM3_PATH.exists():
+        return
+    BOUNDARY_DIR.mkdir(parents=True, exist_ok=True)
+    resp = httpx.get(HDX_GEOJSON_ZIP, follow_redirects=True, timeout=60.0)
+    resp.raise_for_status()
+    with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
+        zf.extract(ADM2_PATH.name, BOUNDARY_DIR)
+        zf.extract(ADM3_PATH.name, BOUNDARY_DIR)
+
+
+def _names(meta: dict, code: str, source_name: str) -> tuple[str, str]:
+    """(name_en, name_bn) from the geo codes. HDX supplies only an English fallback."""
+    name_bn = meta.get("name_bn", "")
+    if not name_bn:
+        log.warning("geo codes have no name_bn for %s; storing it empty", code)
+    return meta.get("name_en", source_name), name_bn
+
+
 def seed_cod_ab_boundaries(conn, geo_codes: dict) -> tuple[int, int]:
     """Fills any missing boundaries and commits. `conn` must return dict rows."""
     with conn.cursor() as cur:
         d_cnt, u_cnt = _counts(cur)
-        if (d_cnt, u_cnt) != (64, 507):
-            BOUNDARY_DIR.mkdir(parents=True, exist_ok=True)
-            if not (ADM2_PATH.exists() and ADM3_PATH.exists()):
-                resp = httpx.get(HDX_GEOJSON_ZIP, follow_redirects=True, timeout=60.0)
-                resp.raise_for_status()
-                with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
-                    zf.extract("bgd_admin2.geojson", BOUNDARY_DIR)
-                    zf.extract("bgd_admin3.geojson", BOUNDARY_DIR)
+        if (d_cnt, u_cnt) == (ADM2_COUNT, ADM3_COUNT):
+            conn.commit()
+            return d_cnt, u_cnt
 
-            d_meta = {d["id"]: d for d in geo_codes["districts"]}
-            u_meta = {u["id"]: u for u in geo_codes["upazilas"]}
+        _download_boundaries()
+        d_meta = {d["id"]: d for d in geo_codes["districts"]}
+        u_meta = {u["id"]: u for u in geo_codes["upazilas"]}
 
-        if d_cnt < 64:
+        if d_cnt < ADM2_COUNT:
             for feat in json.loads(ADM2_PATH.read_text(encoding="utf-8"))["features"]:
                 p = feat["properties"]
                 code = p["adm2_pcode"]
-                meta = d_meta.get(code, {})
+                name_en, name_bn = _names(d_meta.get(code, {}), code, p.get("adm2_name", code))
                 cur.execute(
                     """
                     INSERT INTO geo_districts (id, name_en, name_bn, geom)
@@ -66,19 +86,14 @@ def seed_cod_ab_boundaries(conn, geo_codes: dict) -> tuple[int, int]:
                       name_bn = EXCLUDED.name_bn,
                       geom = EXCLUDED.geom
                     """,
-                    (
-                        code,
-                        meta.get("name_en", p.get("adm2_name", code)),
-                        meta.get("name_bn", ""),
-                        _to_multipolygon_wkt(feat["geometry"]),
-                    ),
+                    (code, name_en, name_bn, _to_multipolygon_wkt(feat["geometry"])),
                 )
 
-        if u_cnt < 507:
+        if u_cnt < ADM3_COUNT:
             for feat in json.loads(ADM3_PATH.read_text(encoding="utf-8"))["features"]:
                 p = feat["properties"]
                 code = p["adm3_pcode"]
-                meta = u_meta.get(code, {})
+                name_en, name_bn = _names(u_meta.get(code, {}), code, p.get("adm3_name", code))
                 cur.execute(
                     """
                     INSERT INTO geo_upazilas (id, district_id, name_en, name_bn, geom)
@@ -89,16 +104,10 @@ def seed_cod_ab_boundaries(conn, geo_codes: dict) -> tuple[int, int]:
                       name_bn = EXCLUDED.name_bn,
                       geom = EXCLUDED.geom
                     """,
-                    (
-                        code,
-                        p["adm2_pcode"],
-                        meta.get("name_en", p.get("adm3_name", code)),
-                        meta.get("name_bn", ""),
-                        _to_multipolygon_wkt(feat["geometry"]),
-                    ),
+                    (code, p["adm2_pcode"], name_en, name_bn, _to_multipolygon_wkt(feat["geometry"])),
                 )
         d_cnt, u_cnt = _counts(cur)
-    if (d_cnt, u_cnt) != (64, 507):
+    if (d_cnt, u_cnt) != (ADM2_COUNT, ADM3_COUNT):
         raise RuntimeError(f"COD-AB sanity check failed: districts={d_cnt}, upazilas={u_cnt}")
     conn.commit()
     return d_cnt, u_cnt

@@ -8,7 +8,7 @@ import re
 from difflib import SequenceMatcher
 
 from food_shared.bangla_norm import normalize_match_key, transliterate_bn_for_matching
-from food_shared.config import load_geo_codes
+from food_shared.config import load_env_files, load_geo_codes, require
 from food_shared.db import get_pg_connection
 
 CHAPTER_RE = re.compile(r"^\s*(?:(\d+):)?(\d{1,2}):(\d{2})\s+[-–|:]?\s*(.+)$", re.MULTILINE)
@@ -82,8 +82,8 @@ def match_segment(
     return sorted(matches, key=lambda m: m["confidence"], reverse=True)
 
 
-def run_matching() -> dict:
-    conn = get_pg_connection()
+def run_matching(database_url: str) -> dict:
+    conn = get_pg_connection(database_url)
     geo = load_geo_codes(os.environ)
 
     with conn.cursor() as cur:
@@ -155,5 +155,11 @@ def run_matching() -> dict:
     return {"videos_checked": len(videos), "matches_upserted": upserted}
 
 
+def main() -> None:
+    load_env_files()
+    (database_url,) = require(os.environ, "DATABASE_URL")
+    print(json.dumps(run_matching(database_url)))
+
+
 if __name__ == "__main__":
-    print(json.dumps(run_matching()))
+    main()

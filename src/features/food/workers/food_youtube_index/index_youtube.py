@@ -9,6 +9,7 @@ import re
 
 import httpx
 
+from food_shared.config import load_env_files, require
 from food_shared.db import get_pg_connection, now_bst_iso
 
 YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
@@ -26,8 +27,8 @@ def channel_to_uploads_playlist(channel_id: str) -> str:
     return "UU" + channel_id[2:] if channel_id.startswith("UC") else channel_id
 
 
-def register_channel(channel_id: str, title: str) -> None:
-    conn = get_pg_connection()
+def register_channel(database_url: str, channel_id: str, title: str) -> None:
+    conn = get_pg_connection(database_url)
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -41,12 +42,12 @@ def register_channel(channel_id: str, title: str) -> None:
     conn.close()
 
 
-def index_channels(max_pages_per_channel: int = 5) -> dict:
+def index_channels(database_url: str, max_pages_per_channel: int = 5) -> dict:
     api_key = os.environ.get("YOUTUBE_API_KEY", "").strip()
     if not api_key:
         return {"status": "skipped", "reason": "YOUTUBE_API_KEY not configured", "quota_units": 0}
 
-    conn = get_pg_connection()
+    conn = get_pg_connection(database_url)
     with conn.cursor() as cur:
         cur.execute("SELECT * FROM youtube_channels WHERE overlay_type = 'food' AND is_active")
         channels = cur.fetchall()
@@ -155,10 +156,16 @@ def index_channels(max_pages_per_channel: int = 5) -> dict:
     return {"status": "ok", "channels": len(channels), "new_videos": new_videos, "quota_units": quota_units}
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--add-channel", nargs=2, metavar=("CHANNEL_ID", "TITLE"))
     args = parser.parse_args()
+    load_env_files()
+    (database_url,) = require(os.environ, "DATABASE_URL")
     if args.add_channel:
-        register_channel(args.add_channel[0], args.add_channel[1])
-    print(json.dumps(index_channels()))
+        register_channel(database_url, args.add_channel[0], args.add_channel[1])
+    print(json.dumps(index_channels(database_url)))
+
+
+if __name__ == "__main__":
+    main()

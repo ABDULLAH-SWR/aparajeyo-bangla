@@ -93,11 +93,10 @@ export function createFoodRepository(sql: PgPool) {
 
   /** The BST calendar date of the latest successful import, or null when there is none. Not memoized. */
   async function readDatasetVersion(): Promise<string | null> {
-    // 'ok' is what the current importer writes.
     const [row] = await sql<{ dataset_version: string | null }[]>`
       SELECT to_char(max(finished_at) AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS dataset_version
       FROM sync_runs
-      WHERE status IN ('succeeded', 'ok')`;
+      WHERE status = 'succeeded'`;
     return row?.dataset_version ?? null;
   }
 

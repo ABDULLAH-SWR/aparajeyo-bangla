@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import json
-
+# Name similarity at which a pair is merged, or else queued for review.
+AUTO_MERGE_SIMILARITY = 0.55
+REVIEW_SIMILARITY = 0.35
 # The tags a survivor takes from a merged duplicate.
 CONTACT_KEYS = ("phone", "website", "addr:full")
 
@@ -55,89 +56,114 @@ def keep_merged_details(cur) -> None:
 
 
 def conflate_osm_and_overture(cur) -> dict:
-    auto_merged = 0
-    queued = 0
-
+    """Merges or queues each Overture row with its best OSM match: the most similar, then the nearest."""
+    thresholds = {"merge": AUTO_MERGE_SIMILARITY, "review": REVIEW_SIMILARITY}
+    # Materialised because merging deactivates rows that the matching reads. The thresholds are cast
+    # to real, the type of similarity(), so that a score equal to a threshold reaches it.
     cur.execute(
         """
-        SELECT
-          o.id::text AS osm_id,
-          v.id::text AS ovt_id,
-          v.source_id AS ovt_source_id,
-          v.name_en AS ovt_name_en,
-          v.name_bn AS ovt_name_bn,
-          v.tags AS ovt_tags,
-          ST_Distance(o.geom::geography, v.geom::geography) AS dist_m,
-          GREATEST(
-            similarity(o.name_norm, v.name_norm),
-            similarity(o.name_roman, v.name_roman)
-          ) AS name_sim
-        FROM places o
-        JOIN places v
-          ON v.overlay_type = 'food'
-         AND v.source = 'overture'
-         AND v.is_active
-         AND o.district_id = v.district_id
-         AND o.category = v.category
-         AND o.geom && ST_Expand(v.geom, 0.001)
-         AND ST_DWithin(o.geom::geography, v.geom::geography, 50)
-        WHERE o.overlay_type = 'food'
-          AND o.source = 'osm'
-          AND o.is_active
-        ORDER BY name_sim DESC, dist_m ASC
+        CREATE TEMP TABLE tmp_food_matches ON COMMIT DROP AS
+        WITH pairs AS (
+          SELECT o.id AS osm_id, v.id AS ovt_id,
+                 ST_Distance(o.geom::geography, v.geom::geography) AS dist_m,
+                 GREATEST(
+                   similarity(o.name_norm, v.name_norm),
+                   similarity(o.name_roman, v.name_roman)
+                 ) AS name_sim
+          FROM places o
+          JOIN places v
+            ON v.overlay_type = 'food'
+           AND v.source = 'overture'
+           AND v.is_active
+           AND o.district_id = v.district_id
+           AND o.category = v.category
+           AND o.geom && ST_Expand(v.geom, 0.001)
+           AND ST_DWithin(o.geom::geography, v.geom::geography, 50)
+          WHERE o.overlay_type = 'food'
+            AND o.source = 'osm'
+            AND o.is_active
+        ),
+        best AS (
+          SELECT DISTINCT ON (ovt_id) *
+          FROM pairs
+          WHERE name_sim >= %(review)s::real
+          ORDER BY ovt_id, name_sim DESC, dist_m, osm_id
+        )
+        SELECT *,
+               name_sim >= %(merge)s::real AS auto_merge,
+               row_number() OVER (ORDER BY name_sim DESC, dist_m, ovt_id) AS position
+        FROM best
+        """,
+        thresholds,
+    )
+    # A survivor of several merges takes each missing value from the earliest one that has it.
+    cur.execute(
+        """
+        WITH merged AS (
+          SELECT m.osm_id, m.position, v.source_id, v.name_en, v.name_bn, v.tags
+          FROM tmp_food_matches m
+          JOIN places v ON v.id = m.ovt_id
+          WHERE m.auto_merge
+        ),
+        survivor AS (
+          SELECT osm_id,
+                 array_agg(source_id ORDER BY position) AS source_ids,
+                 (array_agg(name_en ORDER BY position) FILTER (WHERE name_en IS NOT NULL))[1] AS name_en,
+                 (array_agg(name_bn ORDER BY position) FILTER (WHERE name_bn IS NOT NULL))[1] AS name_bn
+          FROM merged GROUP BY osm_id
+        ),
+        contact AS (
+          SELECT osm_id, jsonb_object_agg(key, value) AS tags
+          FROM (
+            SELECT DISTINCT ON (osm_id, key) osm_id, key, value
+            FROM merged CROSS JOIN LATERAL jsonb_each(merged.tags)
+            WHERE key = ANY (%s) AND value <> 'null'::jsonb
+            ORDER BY osm_id, key, position
+          ) first_value
+          GROUP BY osm_id
+        )
+        UPDATE places p
+        SET name_en = COALESCE(p.name_en, found.name_en),
+            name_bn = COALESCE(p.name_bn, found.name_bn),
+            merged_source_ids = p.merged_source_ids || COALESCE(
+              (SELECT jsonb_agg(added.source_id ORDER BY added.position)
+               FROM unnest(found.source_ids) WITH ORDINALITY AS added (source_id, position)
+               WHERE NOT p.merged_source_ids ? added.source_id),
+              '[]'::jsonb),
+            tags = COALESCE(found.tags, '{}'::jsonb) || p.tags,
+            updated_at = now()
+        FROM (SELECT * FROM survivor LEFT JOIN contact USING (osm_id)) found
+        WHERE p.id = found.osm_id
+        """,
+        (list(CONTACT_KEYS),),
+    )
+    cur.execute(
+        """
+        UPDATE places loser
+        SET merged_into = m.osm_id, is_active = false, updated_at = now()
+        FROM tmp_food_matches m
+        WHERE loser.id = m.ovt_id AND m.auto_merge
         """
     )
-    seen_ovt: set[str] = set()
-
-    for p in cur.fetchall():
-        if p["ovt_id"] in seen_ovt:
-            continue
-        sim = float(p["name_sim"] or 0.0)
-        if sim >= 0.55:
-            seen_ovt.add(p["ovt_id"])
-            ovt_tags = p["ovt_tags"]
-            cur.execute(
-                """
-                UPDATE places
-                SET
-                  name_en = COALESCE(name_en, %s),
-                  name_bn = COALESCE(name_bn, %s),
-                  merged_source_ids = CASE
-                    WHEN NOT (merged_source_ids ? %s) THEN merged_source_ids || jsonb_build_array(%s::text)
-                    ELSE merged_source_ids
-                  END,
-                  tags = jsonb_strip_nulls(%s::jsonb) || tags,
-                  updated_at = now()
-                WHERE id = %s::uuid
-                """,
-                (
-                    p["ovt_name_en"],
-                    p["ovt_name_bn"],
-                    p["ovt_source_id"],
-                    p["ovt_source_id"],
-                    json.dumps({k: ovt_tags.get(k) for k in CONTACT_KEYS}),
-                    p["osm_id"],
-                ),
-            )
-            cur.execute(
-                "UPDATE places SET merged_into = %s::uuid, is_active = false, updated_at = now()"
-                " WHERE id = %s::uuid",
-                (p["osm_id"], p["ovt_id"]),
-            )
-            auto_merged += 1
-        elif sim >= 0.35:
-            seen_ovt.add(p["ovt_id"])
-            cur.execute(
-                """
-                INSERT INTO conflation_review_queue (primary_place_id, candidate_place_id, distance_m, name_similarity)
-                VALUES (%s::uuid, %s::uuid, %s, %s)
-                ON CONFLICT (primary_place_id, candidate_place_id) DO NOTHING
-                """,
-                (p["osm_id"], p["ovt_id"], round(float(p["dist_m"]), 2), round(sim, 2)),
-            )
-            queued += 1
-
-    return {"auto_merged": auto_merged, "review_queued": queued}
+    cur.execute(
+        """
+        INSERT INTO conflation_review_queue (primary_place_id, candidate_place_id, distance_m, name_similarity)
+        SELECT osm_id, ovt_id, round(dist_m::numeric, 2), round(name_sim::numeric, 2)
+        FROM tmp_food_matches
+        WHERE NOT auto_merge
+        ORDER BY position
+        ON CONFLICT (primary_place_id, candidate_place_id) DO NOTHING
+        """
+    )
+    # Counted from the matches: a pair that is already queued still counts.
+    cur.execute(
+        """
+        SELECT COUNT(*) FILTER (WHERE auto_merge) AS auto_merged,
+               COUNT(*) FILTER (WHERE NOT auto_merge) AS review_queued
+        FROM tmp_food_matches
+        """
+    )
+    return dict(cur.fetchone())
 
 
 def backfill_merged_into(conn) -> int:

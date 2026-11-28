@@ -30,7 +30,7 @@ async function getPins() {
 
 test("c2 without a succeeded import the request fails: the clock is not a fallback", async () => {
   await db.sql`INSERT INTO sync_runs (source, dataset_version, imported_count, status, finished_at)
-    VALUES ('osm+overture', '2026-11-30', 0, 'failed', ${FINISHED_AT})`;
+    VALUES ('food_poi_import', '2026-11-30', 0, 'failed', ${FINISHED_AT})`;
 
   const res = await getPins();
 

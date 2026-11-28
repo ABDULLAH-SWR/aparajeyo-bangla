@@ -14,6 +14,7 @@ import boto3
 import httpx
 
 from food_photo_sync.license import is_allowed_license
+from food_shared.config import load_env_files, require
 from food_shared.db import get_pg_connection
 
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
@@ -125,8 +126,8 @@ def fetch_commons_photo(client: httpx.Client, title: str) -> dict | None:
     return None
 
 
-def sync_photos(limit: int = 100) -> dict:
-    conn = get_pg_connection()
+def sync_photos(database_url: str, limit: int = 100) -> dict:
+    conn = get_pg_connection(database_url)
     s3_client, s3_bucket = get_s3_client()
 
     with conn.cursor() as cur:
@@ -224,5 +225,11 @@ def sync_photos(limit: int = 100) -> dict:
     }
 
 
+def main() -> None:
+    load_env_files()
+    (database_url,) = require(os.environ, "DATABASE_URL")
+    print(json.dumps(sync_photos(database_url)))
+
+
 if __name__ == "__main__":
-    print(json.dumps(sync_photos()))
+    main()

@@ -23,7 +23,7 @@ def test_auto_approved_match_is_stored_unreviewed(food_db, monkeypatch):
     food_db.insert_place(name_en="Sultans Dine", name_norm="sultans dine")
     seed_video(food_db, "vid1", "Sultans Dine Dhanmondi")
 
-    run_matching()
+    run_matching(food_db.url)
 
     row = food_db.conn.execute(
         "SELECT status, reviewed_at, reviewed_by FROM video_place_matches"

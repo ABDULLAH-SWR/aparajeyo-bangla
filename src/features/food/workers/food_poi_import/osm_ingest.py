@@ -14,7 +14,8 @@ import psycopg
 from food_poi_import.classify import classify_osm_tags
 from food_poi_import.staging import Candidate
 from food_shared.bangla_norm import resolve_bilingual_names
-from food_shared.db import DATA_DIR, now_bst_iso
+from food_shared.config import DATA_DIR
+from food_shared.db import now_bst_iso
 
 GEOFABRIK_PBF_URL = "https://download.geofabrik.de/asia/bangladesh-latest.osm.pbf"
 PBF_PATH = DATA_DIR / "bangladesh-latest.osm.pbf"

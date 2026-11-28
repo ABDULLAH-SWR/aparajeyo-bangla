@@ -13,7 +13,7 @@ from shapely import wkb
 from food_poi_import.classify import classify_overture_row
 from food_poi_import.staging import Candidate
 from food_shared.bangla_norm import resolve_bilingual_names
-from food_shared.db import DATA_DIR
+from food_shared.config import DATA_DIR
 
 OVERTURE_CACHE_PATH = DATA_DIR / "bd_overture_food.parquet"
 BANGLADESH_BBOX = (88.0, 20.5, 92.7, 26.7)

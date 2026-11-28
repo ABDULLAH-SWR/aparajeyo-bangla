@@ -21,5 +21,5 @@ export async function insertContractVideo(sql: postgres.Sql, videoId: string): P
 /** A succeeded POI import. dataset_version is deliberately unrelated: the API derives it from finished_at. */
 export async function insertImportRun(sql: postgres.Sql, finishedAt = "2026-11-20T04:00:00Z"): Promise<void> {
   await sql`INSERT INTO sync_runs (source, dataset_version, imported_count, status, finished_at)
-    VALUES ('osm+overture', 'unused', 0, 'succeeded', ${finishedAt})`;
+    VALUES ('food_poi_import', 'unused', 0, 'succeeded', ${finishedAt})`;
 }

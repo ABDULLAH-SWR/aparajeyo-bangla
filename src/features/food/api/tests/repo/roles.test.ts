@@ -53,7 +53,7 @@ test("food_worker can write data, use sequences and stage imports", async () => 
   await asRole("food_worker", async (sql) => {
     await insertPhoto(sql, placeId);
     await sql`INSERT INTO sync_runs (source, dataset_version, imported_count, status)
-      VALUES ('osm', '2026-11-28', 1, 'ok')`;
+      VALUES ('food_poi_import', '2026-11-28', 1, 'succeeded')`;
     await sql`CREATE TABLE osm_stage.staging (id int)`;
     await sql`CREATE TEMP TABLE scratch (id int)`;
   });

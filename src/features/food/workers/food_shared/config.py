@@ -10,9 +10,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 FOOD_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = FOOD_ROOT / "data"
 # Whatever GEO_CODES_PATH points at must match the checksum committed beside the vendored file.
 # The API checks the same one.
-GEO_CODES_CHECKSUM = FOOD_ROOT / "data" / "geo_codes.v03.json.sha256"
+GEO_CODES_CHECKSUM = DATA_DIR / "geo_codes.v03.json.sha256"
 
 
 class ConfigError(RuntimeError):

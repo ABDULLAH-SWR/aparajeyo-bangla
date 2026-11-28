@@ -27,7 +27,7 @@ from food_poi_import.conflate import (
 from food_poi_import.staging import ImportSanityError
 from food_shared.cache import bump_epoch
 from food_shared.clock import BST, Clock, SystemClock
-from food_shared.config import load_worker_config
+from food_shared.config import load_env_files, load_worker_config, require
 from food_shared.db import get_pg_connection
 
 __all__ = ["ImportSanityError", "run_import"]
@@ -87,12 +87,11 @@ def run_import(
         cur.execute(
             """
             UPDATE sync_runs
-            SET source = %s, dataset_version = %s, imported_count = %s, status = 'ok',
+            SET dataset_version = %s, imported_count = %s, status = 'succeeded',
                 finished_at = %s, notes = %s::jsonb
             WHERE id = %s
             """,
             (
-                "+".join(sources),
                 dataset_version,
                 sum(counts.values()) - rejected,
                 finished_at,
@@ -129,9 +128,11 @@ def main() -> None:
     parser.add_argument("--skip-overture", action="store_true")
     parser.add_argument("--backfill-merged-into", action="store_true")
     args = parser.parse_args()
+    load_env_files()
 
     if args.backfill_merged_into:
-        with get_pg_connection() as conn:
+        (database_url,) = require(os.environ, "DATABASE_URL")
+        with get_pg_connection(database_url) as conn:
             print(json.dumps({"merged_into_backfilled": backfill_merged_into(conn)}))
         return
 

@@ -1,10 +1,10 @@
 /**
- * Aparajeyo: Food <-> Map Integration Contract Types (v0.1 - M0/M2)
+ * Aparajeyo: Food <-> Map Integration Contract Types (v0.2)
  *
- * Mirrors Aparajeyo_Doc/Documentaion/contracts/food_map/types.ts.
  * Zero-dependency TypeScript types shared between the Food track
  * (places-media-sync / geospatial-api) and Product B (Interactive Map).
  * All JSON payloads use snake_case.
+ * The rules behind these types are in food_map_integration_contract.md.
  */
 
 /** GeoJSON Point coordinates in [longitude, latitude] (SRID 4326). */
@@ -36,28 +36,47 @@ export type FoodCuisine =
 
 export type PlaceSource = "osm" | "overture";
 
+/**
+ * Only "wikimedia" is stored and returned today. "ugc" is kept for Phase 4
+ * (community-ugc) so that consumers can handle it ahead of time. The database
+ * accepts only "wikimedia"; this difference is intentional.
+ */
 export type FoodPhotoSource = "wikimedia" | "ugc";
 
 /* -------------------------------------------------------------------------- */
 /* 1. GET /api/v1/pins?overlay=food                                           */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Query parameters of GET /api/v1/pins.
+ *
+ * Omit both district_id and bbox to get the national featured set.
+ * Food is not bound to the time bar: "date" and "mode" are accepted and
+ * ignored, so they are not declared here.
+ */
 export interface FoodPinsQueryParams {
   overlay: "food";
-  /** 6-char HDX COD-AB ADM2_PCODE (e.g. "BD3026"). */
+  /** 6-char HDX COD-AB ADM2_PCODE (e.g. "BD3026"). Cannot be combined with bbox. */
   district_id?: string;
-  /** Proposed: "minLng,minLat,maxLng,maxLat" viewport bounding box. */
+  /**
+   * Proposed: "minLng,minLat,maxLng,maxLat" viewport bounding box. Cannot be
+   * combined with district_id. Longitudes must be within 87.5-93.5 and
+   * latitudes within 20.0-27.0, each min must be less than its max, and each
+   * span must be at most 2.0 degrees. The server expands the box outward to
+   * the z12 tile grid, so some results can lie outside the requested box.
+   */
   bbox?: string;
   /** Comma-separated FoodCategory values. */
   category?: string;
-  /** When true, return only places with at least one approved video. */
+  /** When true, return only places with at least one approved, available video. */
   has_video?: boolean;
-  /** Optional: trigger live upstream sync/refresh before responding. */
-  refresh?: boolean;
 }
 
 export interface FoodPinProperties {
-  /** Place UUID v4 (matches top-level Feature.id). */
+  /**
+   * Place ID (matches top-level Feature.id). Shaped like a UUID v4 but derived
+   * by hashing (source, source_id), so do not assume it is random.
+   */
   id: string;
   /** Constant discriminator for cross-overlay pin routing. */
   pin_type: "food_poi";
@@ -70,6 +89,7 @@ export interface FoodPinProperties {
   /** Bangla place name (at least one of name_en / name_bn is non-null). */
   name_bn: string | null;
   category: FoodCategory;
+  /** True when the place has at least one approved, available video. */
   has_video: boolean;
   /** HMAC-signed imgproxy URL (~320px thumbnail), or null if no photo. */
   thumbnail_url: string | null;
@@ -89,12 +109,19 @@ export interface FoodPinFeature {
 
 export interface FoodPinsMetadata {
   overlay: "food";
-  /** Requested 6-char ADM2_PCODE, or null for national/bbox queries. */
+  /** Requested 6-char ADM2_PCODE, or null for national and bbox queries. */
   district_id: string | null;
+  /**
+   * Number of features returned in this response (equals features.length).
+   * It is not the total number of matching places.
+   */
   total_count: number;
-  /** True when results hit the response cap (2,000 national / 5,000 scoped). */
+  /** True when the response cap was hit (2,000 national / 5,000 district or bbox). */
   truncated: boolean;
-  /** Monthly/live dataset version date (YYYY-MM-DD). */
+  /**
+   * Asia/Dhaka calendar date (YYYY-MM-DD) of the latest successful
+   * food_poi_import run.
+   */
   dataset_version: string;
   attribution_text: string;
 }
@@ -152,6 +179,7 @@ export interface OsmAttribution {
 }
 
 export interface FoodPinDetail {
+  /** Same value as the pin's id: hash-derived, shaped like a UUID v4. */
   id: string;
   pin_type: "food_poi";
   district_id: string;
@@ -193,44 +221,26 @@ export interface FoodPinDetail {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 3. Live Health & Sync Metadata                                             */
+/* 3. Standard Error Envelope                                                 */
 /* -------------------------------------------------------------------------- */
 
-export interface FoodHealthResponse {
-  status: "ok";
-  service: "aparajeyo-food-api";
-  dataset_version: string | null;
-  last_sync_at: string | null;
-  total_places: number;
-  active_places: number;
-  districts_covered: number;
-  total_photos: number;
-  total_videos: number;
-  imgproxy_enabled: boolean;
-}
-
-export interface FoodSyncResponse {
-  status: "synced";
-  source: string;
-  imported_count: number;
-  active_places: number;
-  dataset_version: string;
-  synced_at: string;
-}
-
-/* -------------------------------------------------------------------------- */
-/* 4. Standard Error Envelope                                                 */
-/* -------------------------------------------------------------------------- */
-
+/**
+ * Every error code the Food API can send. The union is closed, so an
+ * exhaustive switch is possible.
+ *
+ * "UPSTREAM_UNAVAILABLE" is deliberately not listed: the server never sends it.
+ * The Food client (foodService.ts) creates it when it cannot get a response,
+ * and declares it in its own FoodClientErrorCode type.
+ */
 export type FoodErrorCode =
   | "INVALID_ID"
   | "INVALID_DISTRICT"
   | "INVALID_BBOX"
   | "INVALID_CATEGORY"
+  | "INVALID_QUERY"
   | "FOOD_PLACE_NOT_FOUND"
-  | "UPSTREAM_UNAVAILABLE"
-  | "INTERNAL_ERROR"
-  | string;
+  | "NOT_FOUND"
+  | "INTERNAL_ERROR";
 
 export interface ApiErrorResponse {
   error: {

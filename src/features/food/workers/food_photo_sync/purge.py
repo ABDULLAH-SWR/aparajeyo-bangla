@@ -6,8 +6,10 @@ Run before migration 0002, which refuses to apply while any such row exists.
 from __future__ import annotations
 
 import json
+import os
 
 from food_photo_sync.sync_photos import get_s3_client
+from food_shared.config import load_env_files, require
 from food_shared.db import get_pg_connection
 
 # Must stay identical to the place_photos_license_chk pattern in 0002_place_photos_per_place.sql.
@@ -30,10 +32,12 @@ def purge_nonfree(conn, s3_client, bucket: str) -> dict:
 
 
 def main() -> None:
+    load_env_files()
+    (database_url,) = require(os.environ, "DATABASE_URL")
     s3_client, bucket = get_s3_client()
     if s3_client is None:
         raise SystemExit("S3_ACCESS_KEY and S3_SECRET_KEY are required to delete mirrored files")
-    with get_pg_connection() as conn:
+    with get_pg_connection(database_url) as conn:
         print(json.dumps(purge_nonfree(conn, s3_client, bucket)))
 
 
