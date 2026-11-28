@@ -58,6 +58,7 @@ untyped_calls_exclude = ["valkey"]
 # Third-party packages without type information.
 module = [
   "boto3.*",
+  "botocore.*",
   "normalizer.*",
   "overturemaps.*",
   "pyarrow.*",
@@ -70,6 +71,7 @@ ignore_missing_imports = true
 food-poi-import          = "food_poi_import.run:main"
 food-cache-warm          = "food_cache_warm.warm:main"
 food-photo-purge-nonfree = "food_photo_sync.purge:main"
+food-photo-sync          = "food_photo_sync.sync:main"
 
 [build-system]
 requires = ["hatchling"]

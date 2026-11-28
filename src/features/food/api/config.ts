@@ -49,8 +49,8 @@ const ConfigSchema = z
     IMGPROXY_BASE_URL: z.url(),
     IMGPROXY_KEY: Hex32,
     IMGPROXY_SALT: Hex32,
-    // The workers and imgproxy default to this bucket until the Phase 2 media pipeline renames it.
-    S3_BUCKET: z.string().min(1).default("aparajeyo"),
+    // The one media bucket: garage-bootstrap.sh creates it and imgproxy reads from nowhere else.
+    S3_BUCKET: z.string().min(1).default("food-media"),
     CORS_ALLOWED_ORIGINS: z.string().min(1),
     FOOD_INTERNAL_BIND_ADDR: BindAddr,
     FOOD_INTERNAL_PORT: z.coerce.number().int().default(8003),

@@ -1,0 +1,32 @@
+{
+  "batchcomplete": true,
+  "query": {
+    "pages": [
+      {
+        "pageid": 1001,
+        "ns": 6,
+        "title": "File:Example kacchi.jpg",
+        "imagerepository": "local",
+        "imageinfo": [
+          {
+            "size": 4821337,
+            "width": 4000,
+            "height": 3000,
+            "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Example_kacchi.jpg/2048px-Example_kacchi.jpg",
+            "thumbwidth": 2048,
+            "thumbheight": 1536,
+            "url": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Example_kacchi.jpg",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_kacchi.jpg",
+            "sha1": "0000000000000000000000000000000000000001",
+            "mime": "image/jpeg",
+            "extmetadata": {
+              "LicenseShortName": { "value": "CC BY-SA 4.0", "source": "commons-desc-page" },
+              "LicenseUrl": { "value": "https://creativecommons.org/licenses/by-sa/4.0", "source": "commons-desc-page" },
+              "Artist": { "value": "Example Photographer", "source": "commons-desc-page" }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -16,6 +16,12 @@ from food_photo_sync.license import is_allowed_license
         ("Public domain", None, True),
         ("CC BY-SA 3.0 de", None, True),
         ("CC BY-SA 4.0", "true", False),
+        # The database CHECK of migration 0002 decides what can be stored (Appendix D.3).
+        ("CC BY 1.5", None, False),
+        ("PD-old", None, True),
+        ("CC BY-SA 3.0 igo", None, True),
+        ("CC BY-SA 4.0", "True", False),
+        (" CC BY 4.0 ", None, True),
     ],
 )
 def test_is_allowed_license(short_name, non_free_flag, expected):

@@ -26,8 +26,9 @@ else
   pass "c1 compose config fails with an empty environment"
 fi
 
-required=(IMGPROXY_KEY IMGPROXY_SALT S3_ACCESS_KEY S3_SECRET_KEY DIRECTUS_SECRET DIRECTUS_ADMIN_EMAIL
-  DIRECTUS_ADMIN_PASSWORD GARAGE_RPC_SECRET GARAGE_ADMIN_TOKEN POSTGRES_PASSWORD FOOD_INVALIDATE_TOKEN)
+required=(IMGPROXY_KEY IMGPROXY_SALT S3_REGION S3_IMGPROXY_ACCESS_KEY S3_IMGPROXY_SECRET_KEY
+  DIRECTUS_SECRET DIRECTUS_ADMIN_EMAIL DIRECTUS_ADMIN_PASSWORD GARAGE_RPC_SECRET GARAGE_ADMIN_TOKEN
+  POSTGRES_PASSWORD FOOD_INVALIDATE_TOKEN)
 
 for omitted in "${required[@]}"; do
   others=()
@@ -73,10 +74,10 @@ else
 fi
 
 # c3: Garage takes both secrets from the environment, never from the committed config.
-if grep -nE '^[[:space:]]*(rpc_secret|admin_token)[[:space:]]*=' garage.toml >/dev/null; then
-  fail "c3 garage.toml contains an rpc_secret or admin_token literal"
+if grep -nE '^[[:space:]]*(rpc_secret|admin_token)[[:space:]]*=' docker-compose.yml >/dev/null; then
+  fail "c3 the Garage configuration contains an rpc_secret or admin_token literal"
 else
-  pass "c3 garage.toml holds no secret literals"
+  pass "c3 the Garage configuration holds no secret literals"
 fi
 
 exit $((failures > 0))

@@ -9,13 +9,16 @@ class FakeS3:
     """Stands in for Garage."""
 
     def __init__(self, fail: bool = False):
-        self.deleted: list[tuple[str, str]] = []
+        self.deleted: list[str] = []
         self.fail = fail
 
-    def delete_object(self, *, Bucket: str, Key: str) -> None:
+    def put(self, key: str, body: bytes, content_type: str) -> None:
+        raise AssertionError("the purge writes no objects")
+
+    def delete(self, key: str) -> None:
         if self.fail:
             raise ConnectionError("garage is down")
-        self.deleted.append((Bucket, Key))
+        self.deleted.append(key)
 
 
 def photo_licenses(db) -> list[str]:
@@ -32,10 +35,10 @@ def test_purge_removes_non_free_rows_and_objects_so_0002_can_apply(food_db):
     s3 = FakeS3()
 
     with psycopg.connect(food_db.url, row_factory=dict_row) as conn:
-        result = purge_nonfree(conn, s3, "bucket")
+        result = purge_nonfree(conn, s3)
 
     assert result == {"rows_deleted": 2}
-    assert sorted(s3.deleted) == sorted([("bucket", nc), ("bucket", nd)])
+    assert sorted(s3.deleted) == sorted([nc, nd])
     assert photo_licenses(food_db) == ["CC BY-SA 4.0"]
     food_db.migrate(after="0001", up_to="0002")
 
@@ -49,6 +52,6 @@ def test_purge_keeps_the_row_when_its_object_cannot_be_deleted(food_db):
         psycopg.connect(food_db.url, row_factory=dict_row) as conn,
         pytest.raises(ConnectionError),
     ):
-        purge_nonfree(conn, FakeS3(fail=True), "bucket")
+        purge_nonfree(conn, FakeS3(fail=True))
 
     assert photo_licenses(food_db) == ["CC BY-NC 4.0"]

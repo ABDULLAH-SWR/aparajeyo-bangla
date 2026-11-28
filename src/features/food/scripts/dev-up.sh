@@ -22,7 +22,6 @@ if [[ ! -f .env.local ]]; then
   command -v openssl >/dev/null || { echo "dev-up: openssl is required" >&2; exit 1; }
   secret() { openssl rand -hex 32; }
   postgres_password=$(secret)
-  s3_key_suffix=$(openssl rand -hex 12)
   api_db_password=$(secret)
   worker_db_password=$(secret)
   umask 077
@@ -35,8 +34,6 @@ if [[ ! -f .env.local ]]; then
     echo "DATABASE_URL=postgresql://food_api:$api_db_password@127.0.0.1:5433/aparajeyo_food"
     echo "IMGPROXY_KEY=$(secret)"
     echo "IMGPROXY_SALT=$(secret)"
-    echo "S3_ACCESS_KEY=GK$s3_key_suffix"
-    echo "S3_SECRET_KEY=$(secret)"
     echo "GARAGE_RPC_SECRET=$(secret)"
     echo "GARAGE_ADMIN_TOKEN=$(secret)"
     echo "DIRECTUS_SECRET=$(secret)"
@@ -67,6 +64,14 @@ ensure_setting CORS_ALLOWED_ORIGINS http://localhost:3000
 ensure_setting FOOD_INTERNAL_BIND_ADDR 127.0.0.1
 ensure_setting GEO_CODES_PATH data/geo_codes.v03.json
 ensure_setting FOOD_API_BASE_URL http://127.0.0.1:8002
+ensure_setting S3_ENDPOINT http://127.0.0.1:3900
+ensure_setting S3_REGION ap-south-1
+ensure_setting S3_BUCKET food-media
+ensure_setting WIKIMEDIA_USER_AGENT "AparajeyoFoodSync/0.1 (https://aparajeyo.com)"
+# Garage creates its own keys. Compose needs the names to exist before garage-bootstrap.sh can run.
+for name in S3_ACCESS_KEY S3_SECRET_KEY S3_IMGPROXY_ACCESS_KEY S3_IMGPROXY_SECRET_KEY; do
+  ensure_setting "$name" not-yet-created
+done
 
 # .env holds optional non-secret settings; .env.local is read last, so it wins.
 env_files=()
@@ -75,6 +80,8 @@ env_files+=(--env-file .env.local)
 
 # A new volume starts empty. Migrations and role logins are explicit steps.
 echo "dev-up: then run dbmate up (as DATABASE_URL_OWNER) and scripts/db-bootstrap-roles.sh" >&2
+echo "dev-up: for photos, run scripts/garage-bootstrap.sh once, put its keys in .env.local," \
+  "then run dev-up again" >&2
 
 docker compose "${env_files[@]}" up -d "$@"
 

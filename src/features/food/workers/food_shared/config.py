@@ -75,3 +75,39 @@ def load_worker_config(env: Mapping[str, str]) -> WorkerConfig:
     return WorkerConfig(
         database_url=database_url, valkey_url=valkey_url, geo_codes=load_geo_codes(env)
     )
+
+
+@dataclass(frozen=True)
+class PhotoSyncConfig:
+    database_url: str
+    valkey_url: str
+    s3: dict[str, str]
+    """The arguments of GarageS3Store."""
+    user_agent: str
+    max_bytes: int
+
+
+S3_VARIABLES = {
+    "endpoint": "S3_ENDPOINT",
+    "region": "S3_REGION",
+    "bucket": "S3_BUCKET",
+    "access_key": "S3_ACCESS_KEY",
+    "secret_key": "S3_SECRET_KEY",
+}
+
+
+def load_s3_settings(env: Mapping[str, str]) -> dict[str, str]:
+    return dict(zip(S3_VARIABLES, require(env, *S3_VARIABLES.values()), strict=True))
+
+
+def load_photo_sync_config(env: Mapping[str, str]) -> PhotoSyncConfig:
+    database_url, valkey_url, user_agent, *_ = require(
+        env, "DATABASE_URL", "VALKEY_URL", "WIKIMEDIA_USER_AGENT", *S3_VARIABLES.values()
+    )
+    return PhotoSyncConfig(
+        database_url=database_url,
+        valkey_url=valkey_url,
+        s3=load_s3_settings(env),
+        user_agent=user_agent,
+        max_bytes=int(env.get("PHOTO_MAX_BYTES") or 10 * 1024 * 1024),
+    )
