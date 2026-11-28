@@ -1,5 +1,7 @@
 # Shell scripts run under bash/WSL, which rejects CRLF.
 *.sh text eol=lf
+# Exported by Directus, and compared with a fresh export by the Directus tests.
+directus/snapshot.yaml text eol=lf
 # dbmate migrations stay LF on every checkout.
 *.sql text eol=lf
 data/geo_codes.v03.json* -text

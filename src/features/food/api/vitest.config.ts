@@ -35,6 +35,18 @@ export default defineConfig({
         },
       },
       {
+        // S8: one throwaway Directus stack, so the files run one after another.
+        test: {
+          name: "directus",
+          include: ["tests/directus/**/*.test.ts"],
+          globalSetup: ["tests/support/directus-global-setup.ts"],
+          fileParallelism: false,
+          sequence: { groupOrder: 1 },
+          testTimeout: 90_000,
+          hookTimeout: 120_000,
+        },
+      },
+      {
         test: {
           name: "types",
           include: [],

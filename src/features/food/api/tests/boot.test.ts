@@ -49,13 +49,18 @@ function startServer(env: Record<string, string>) {
   return { process: started, stderr: () => stderr };
 }
 
-const liveEnv = (port: number) =>
-  validEnv({ PORT: String(port), DATABASE_URL: db.url, VALKEY_URL: inject("valkeyUrl") });
+const liveEnv = async (port: number) =>
+  validEnv({
+    PORT: String(port),
+    FOOD_INTERNAL_PORT: String(await freePort()),
+    DATABASE_URL: db.url,
+    VALKEY_URL: inject("valkeyUrl"),
+  });
 
 test("c1 serves health within 3 s of starting", async () => {
   const port = await freePort();
   const deadline = Date.now() + BOOT_BUDGET_MS;
-  const server = startServer(liveEnv(port));
+  const server = startServer(await liveEnv(port));
 
   let status = 0;
   while (status !== 200 && Date.now() < deadline) {
@@ -70,7 +75,7 @@ test("c1 serves health within 3 s of starting", async () => {
 });
 
 test("c2 exits with code 1 and names the missing variable", async () => {
-  const server = startServer(without(liveEnv(await freePort()), "DATABASE_URL"));
+  const server = startServer(without(await liveEnv(await freePort()), "DATABASE_URL"));
 
   const [code] = await once(server.process, "close", { signal: AbortSignal.timeout(BOOT_BUDGET_MS) });
 

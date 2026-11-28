@@ -11,7 +11,7 @@ import { createFoodRepository } from "../../repository";
 import { createValkeyCache } from "../../valkey";
 
 interface LogEntry {
-  level: "warn" | "error";
+  level: "info" | "warn" | "error";
   context: Record<string, unknown>;
   message: string;
 }
@@ -43,6 +43,7 @@ export function createTestApp({
   const sql = createPgPool(databaseUrl);
   const logs: LogEntry[] = [];
   const logger: Logger = {
+    info: (context, message) => void logs.push({ level: "info", context, message }),
     warn: (context, message) => void logs.push({ level: "warn", context, message }),
     error: (context, message) => void logs.push({ level: "error", context, message }),
   };

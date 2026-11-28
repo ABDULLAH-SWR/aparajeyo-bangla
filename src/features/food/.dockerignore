@@ -1,0 +1,12 @@
+# An allowlist for api/Dockerfile: anything not named here never leaves the machine.
+**
+!package.json
+!bun.lock
+!types.ts
+!contract/*.ts
+!contract/*.json
+!api/package.json
+!api/bun.lock
+!api/*.ts
+!data/geo_codes.v03.json
+!data/geo_codes.v03.json.sha256

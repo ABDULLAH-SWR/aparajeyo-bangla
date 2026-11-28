@@ -1,6 +1,6 @@
 # Food overlay CI (Guide §7.4). Paths are relative to the Aparajeyo_Bangla repository root.
-# Not here yet: the `directus` job (Phase 2, slices 2.10-2.15) and the `e2e` job (it needs
-# docker-compose.ci.yml, the perf dataset and the k6 scripts, which do not exist yet).
+# Not here yet: the `e2e` job (it needs docker-compose.ci.yml, the perf dataset and the k6 scripts,
+# which do not exist yet).
 name: food
 on:
   pull_request:
@@ -93,6 +93,23 @@ jobs:
       - run: docker compose -f docker-compose.test.yml up -d --wait
         working-directory: src/features/food
       - run: FOOD_TEST_USE_COMPOSE=1 bun run test:integration
+
+  # Phase 2 slices 2.10-2.15: Directus, the API image, PostGIS and Valkey from docker-compose.yml,
+  # started under a throwaway project by scripts/test-directus-stack.sh. The tests also cover the §8.3
+  # review items: a second directus-bootstrap run changes nothing, and snapshot.yaml equals a fresh
+  # export.
+  directus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: "${{ env.BUN_VERSION }}" }
+      # scripts/ resolves its packages from the feature root, the tests from api/.
+      - run: bun install --frozen-lockfile
+        working-directory: src/features/food
+      - run: bun install --frozen-lockfile
+      - run: bun run test:directus
 
   workers:
     runs-on: ubuntu-24.04

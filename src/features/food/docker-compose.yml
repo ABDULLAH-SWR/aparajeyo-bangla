@@ -1,11 +1,8 @@
 # Secrets have no defaults: compose fails closed. Generate .env.local with scripts/dev-up.sh.
-# No compose service reads this token; it is listed here so a missing value still fails closed.
-x-food-invalidate-token: ${FOOD_INVALIDATE_TOKEN:?required}
-
 services:
   postgres:
     image: postgis/postgis:17-3.5
-    container_name: aparajeyo-food-postgres
+    container_name: ${FOOD_CONTAINER_PREFIX:-aparajeyo-food}-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-food}
@@ -23,7 +20,7 @@ services:
 
   valkey:
     image: valkey/valkey:8.1-alpine
-    container_name: aparajeyo-food-valkey
+    container_name: ${FOOD_CONTAINER_PREFIX:-aparajeyo-food}-valkey
     restart: unless-stopped
     ports:
       - "${FOOD_VALKEY_PORT:-6382}:6379"
@@ -71,17 +68,54 @@ services:
       IMGPROXY_MAX_SRC_FILE_SIZE: "10485760" # PHOTO_MAX_BYTES of the workers
       IMGPROXY_FAIL_ON_DEPRECATION: "true" # a renamed setting must not be silently ignored
 
-  directus:
-    image: ${DIRECTUS_IMAGE:-directus/directus:12}
-    container_name: aparajeyo-food-directus
+  food-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
       valkey:
         condition: service_healthy
+    networks:
+      default: {}
+      food_internal:
+        ipv4_address: ${FOOD_INTERNAL_PREFIX:-172.30.0}.10
     ports:
-      - "${FOOD_DIRECTUS_PORT:-8055}:8055"
+      - "127.0.0.1:${FOOD_API_PORT:-8002}:8002" # 8003, the internal listener, is never published
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgresql://food_api:${FOOD_API_DB_PASSWORD:?required}@postgres:5432/${POSTGRES_DB:-aparajeyo_food}
+      VALKEY_URL: redis://valkey:6379/0
+      # The URL browsers use, not a container address: it is written into the responses.
+      IMGPROXY_BASE_URL: ${IMGPROXY_BASE_URL:-http://127.0.0.1:8081}
+      IMGPROXY_KEY: ${IMGPROXY_KEY:?required}
+      IMGPROXY_SALT: ${IMGPROXY_SALT:?required}
+      S3_BUCKET: food-media # no S3 credentials: the API only signs URLs
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      FOOD_INTERNAL_BIND_ADDR: ${FOOD_INTERNAL_PREFIX:-172.30.0}.10
+      FOOD_INVALIDATE_TOKEN: ${FOOD_INVALIDATE_TOKEN:?required}
+      GEO_CODES_PATH: data/geo_codes.v03.json
+
+  directus:
+    # Version 11, not 12: without a licence key, 12 refuses every custom permission rule, which the
+    # Food Editor policy needs. directus/snapshot.yaml must be re-exported when this version changes.
+    image: directus/directus:11.17.4@sha256:eb326f679ae847c0a776f93b972761dc2ebe84980e0b9d274a6bc31cd62809f7
+    container_name: ${FOOD_CONTAINER_PREFIX:-aparajeyo-food}-directus
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    networks:
+      - default
+      - food_internal
+    ports:
+      - "127.0.0.1:${FOOD_DIRECTUS_PORT:-8055}:8055"
+    volumes:
+      - ./directus:/directus/food:ro # the committed schema snapshot
     environment:
       SECRET: ${DIRECTUS_SECRET:?required}
       ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:?required}
@@ -90,12 +124,29 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_DATABASE: ${POSTGRES_DB:-aparajeyo_food}
-      DB_USER: ${POSTGRES_USER:-food}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      # Never the owner: directus_food has column-scoped UPDATE and no DDL on public (migration 0012).
+      DB_USER: directus_food
+      DB_PASSWORD: ${DIRECTUS_DB_PASSWORD:?required}
+      DB_SEARCH_PATH: directus,public # its system tables live in the directus schema
+      # Tables no editor works with. spatial_ref_sys belongs to PostGIS.
+      DB_EXCLUDE_TABLES: spatial_ref_sys,schema_migrations,sync_runs,food_import_rejects
       CACHE_ENABLED: "true"
       CACHE_STORE: redis
-      REDIS: "redis://valkey:6379"
+      # DB 0 holds the Food keys. Some Directus keys ignore the namespace, so the database differs too.
+      REDIS: "redis://valkey:6379/1"
+      CACHE_NAMESPACE: directus
       WEBSOCKETS_ENABLED: "false"
+      # The Flow that directus-bootstrap.ts creates sends this token to the API's internal listener.
+      FOOD_INVALIDATE_TOKEN: ${FOOD_INVALIDATE_TOKEN:?required}
+      FLOWS_ENV_ALLOW_LIST: FOOD_INVALIDATE_TOKEN
+
+networks:
+  # Carries the invalidation call from Directus to the API. internal: no route off the host.
+  food_internal:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${FOOD_INTERNAL_PREFIX:-172.30.0}.0/24
 
 # Garage's configuration is inline so that Compose fills in S3_REGION: Garage cannot read it from the
 # environment.

@@ -72,13 +72,18 @@ test("food_worker cannot change administrative boundaries", async () => {
 
 // The compose test server trusts every local connection, so a login there proves nothing about
 // the passwords.
-test.skipIf(USE_COMPOSE)("bootstrap script lets both roles log in", async () => {
-  const passwords = { food_api: `api-${crypto.randomUUID()}`, food_worker: `w-${crypto.randomUUID()}` };
+test.skipIf(USE_COMPOSE)("bootstrap script lets all three roles log in", async () => {
+  const passwords = {
+    food_api: `api-${crypto.randomUUID()}`,
+    food_worker: `w-${crypto.randomUUID()}`,
+    directus_food: `d-${crypto.randomUUID()}`,
+  };
 
   const run = await runScript("db-bootstrap-roles.sh", {
     DATABASE_URL_OWNER: db.url,
     FOOD_API_DB_PASSWORD: passwords.food_api,
     FOOD_WORKER_DB_PASSWORD: passwords.food_worker,
+    DIRECTUS_DB_PASSWORD: passwords.directus_food,
   });
 
   expect(run.exitCode).toBe(0);

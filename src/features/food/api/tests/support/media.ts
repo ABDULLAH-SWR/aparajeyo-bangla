@@ -8,7 +8,7 @@ import { z } from "zod";
 
 // On Windows, a bare `bash` can resolve to the WSL launcher, which cannot see Windows paths.
 const GIT_BASH = "C:\\Program Files\\Git\\bin\\bash.exe";
-const BASH = process.platform === "win32" && existsSync(GIT_BASH) ? GIT_BASH : "bash";
+export const BASH = process.platform === "win32" && existsSync(GIT_BASH) ? GIT_BASH : "bash";
 const SCRIPT = fileURLToPath(new URL("../../../scripts/test-media-stack.sh", import.meta.url)).replaceAll("\\", "/");
 
 const SettingsSchema = z.object({
@@ -24,7 +24,8 @@ const SettingsSchema = z.object({
 
 const PortSchema = z.object({ host_ip: z.string().optional(), target: z.number() });
 const ComposeSchema = z.object({
-  services: z.record(z.string(), z.object({ image: z.string(), ports: z.array(PortSchema).optional() })),
+  // A service that compose builds (food-api) has no image name.
+  services: z.record(z.string(), z.object({ image: z.string().optional(), ports: z.array(PortSchema).optional() })),
 });
 
 export async function startMediaStack() {

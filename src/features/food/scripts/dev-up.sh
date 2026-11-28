@@ -68,6 +68,9 @@ ensure_setting S3_ENDPOINT http://127.0.0.1:3900
 ensure_setting S3_REGION ap-south-1
 ensure_setting S3_BUCKET food-media
 ensure_setting WIKIMEDIA_USER_AGENT "AparajeyoFoodSync/0.1 (https://aparajeyo.com)"
+# Used by db-bootstrap-roles.sh and by the directus service.
+ensure_setting DIRECTUS_DB_PASSWORD "$(openssl rand -hex 32)"
+ensure_setting DIRECTUS_URL http://127.0.0.1:8055
 # Garage creates its own keys. Compose needs the names to exist before garage-bootstrap.sh can run.
 for name in S3_ACCESS_KEY S3_SECRET_KEY S3_IMGPROXY_ACCESS_KEY S3_IMGPROXY_SECRET_KEY; do
   ensure_setting "$name" not-yet-created
@@ -82,6 +85,8 @@ env_files+=(--env-file .env.local)
 echo "dev-up: then run dbmate up (as DATABASE_URL_OWNER) and scripts/db-bootstrap-roles.sh" >&2
 echo "dev-up: for photos, run scripts/garage-bootstrap.sh once, put its keys in .env.local," \
   "then run dev-up again" >&2
+echo "dev-up: for Directus, after dbmate and the roles: 'bun scripts/directus-bootstrap.ts register',"   "'docker compose exec directus node cli.js schema apply --yes /directus/food/snapshot.yaml',"   "then 'bun scripts/directus-bootstrap.ts' (the compose files need the same --env-file options)" >&2
+echo "dev-up: the food-api service holds port 8002; stop it before 'bun run dev'" >&2
 
 docker compose "${env_files[@]}" up -d "$@"
 
