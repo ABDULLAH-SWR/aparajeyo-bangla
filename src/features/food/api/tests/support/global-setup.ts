@@ -15,12 +15,16 @@ import { promisify } from "node:util";
 import postgres from "postgres";
 import { GenericContainer, Wait } from "testcontainers";
 import type { TestProject } from "vitest/node";
-import { COMPOSE_PG_URL, COMPOSE_VALKEY_URL, USE_COMPOSE } from "./compose";
+import {
+  COMPOSE_PG_URL,
+  COMPOSE_VALKEY_URL,
+  POSTGIS_IMAGE,
+  USE_COMPOSE,
+  VALKEY_IMAGE,
+} from "./compose";
 
 const MIGRATIONS_DIR = resolve(fileURLToPath(import.meta.url), "../../../../db/migrations");
 const SEEDS = ["test_geo.sql", "test_base.sql"].map((file) => resolve(MIGRATIONS_DIR, "../seeds", file));
-const POSTGIS_IMAGE = "postgis/postgis:17-3.5"; // must equal the compose `postgres` image tag
-const VALKEY_IMAGE = "valkey/valkey:8.1-alpine"; // must equal the compose `valkey` image tag
 
 declare module "vitest" {
   export interface ProvidedContext {

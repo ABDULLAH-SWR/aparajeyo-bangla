@@ -9,18 +9,17 @@ import { copyFileSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "no
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import postgres from "postgres";
-import { COMPOSE_PG_URL, USE_COMPOSE } from "./compose";
+import { COMPOSE_PG_URL, POSTGIS_IMAGE, USE_COMPOSE } from "./compose";
 
 export const FOOD_ROOT = resolve(import.meta.dir, "../../..");
 const MIGRATIONS_DIR = join(FOOD_ROOT, "db", "migrations");
-const IMAGE = "postgis/postgis:17-3.5"; // must equal the compose `postgres` image tag
 
 let server: Promise<string> | undefined;
 
 function serverUrl(): Promise<string> {
   server ??= (async () => {
     if (USE_COMPOSE) return COMPOSE_PG_URL;
-    const container = await new PostgreSqlContainer(IMAGE).start();
+    const container = await new PostgreSqlContainer(POSTGIS_IMAGE).start();
     return `${container.getConnectionUri()}?sslmode=disable`;
   })();
   return server;
