@@ -13,6 +13,12 @@ on:
 permissions:
   contents: read
   pull-requests: read # gitleaks-action lists the commits of a pull request
+env:
+  BUN_VERSION: "1.4.4" # keep equal to "packageManager" in the root package.json
+  # The services of docker-compose.test.yml, for the Python suite. The TypeScript harness ignores
+  # both: its URLs are fixed in api/tests/support/compose.ts.
+  DATABASE_URL_OWNER: postgresql://food@127.0.0.1:55432/postgres
+  VALKEY_URL: redis://127.0.0.1:56379/0
 defaults:
   run:
     shell: bash # fails a pipeline when any command in it fails
@@ -41,7 +47,7 @@ jobs:
           # A private contract repository needs a token that can read it.
           token: ${{ secrets.CONTRACT_REPO_TOKEN || github.token }}
       - uses: oven-sh/setup-bun@v2
-        with: { bun-version: "1.4.4" }
+        with: { bun-version: "${{ env.BUN_VERSION }}" }
       # contract/ and testdata/ resolve their packages from the feature root, the API from api/.
       - run: bun install --frozen-lockfile
         working-directory: src/features/food
@@ -56,7 +62,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-        with: { bun-version: "1.4.4" }
+        with: { bun-version: "${{ env.BUN_VERSION }}" }
       - run: bun install --frozen-lockfile
         working-directory: src/features/food
       - run: bun install --frozen-lockfile
@@ -80,7 +86,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-        with: { bun-version: "1.4.4" }
+        with: { bun-version: "${{ env.BUN_VERSION }}" }
       - run: bun install --frozen-lockfile
         working-directory: src/features/food
       - run: bun install --frozen-lockfile
@@ -93,9 +99,6 @@ jobs:
     defaults:
       run:
         working-directory: src/features/food/workers
-    env: # the services of docker-compose.test.yml
-      DATABASE_URL_OWNER: postgresql://food@127.0.0.1:55432/postgres
-      VALKEY_URL: redis://127.0.0.1:56379/0
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -131,13 +134,10 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    env:
-      DATABASE_URL_OWNER: postgresql://food@127.0.0.1:55432/postgres
-      VALKEY_URL: redis://127.0.0.1:56379/0
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-        with: { bun-version: "1.4.4" }
+        with: { bun-version: "${{ env.BUN_VERSION }}" }
       - uses: astral-sh/setup-uv@v6
       - run: sudo apt-get update && sudo apt-get install -y osm2pgsql
       - run: bun install --frozen-lockfile
