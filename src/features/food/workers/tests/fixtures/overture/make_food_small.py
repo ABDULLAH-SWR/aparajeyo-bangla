@@ -1,6 +1,7 @@
 """Regenerates food_small.parquet: `uv run python tests/fixtures/overture/make_food_small.py`.
 
-8 rows. ovt-star and ovt-akboria duplicate OSM node/1 and way/101. ovt-lowconf is below the confidence
+8 rows. ovt-star and ovt-akboria duplicate OSM node/1 and way/101. ovt-lowconf is below the
+confidence
 floor and ovt-closed is permanently closed, so 6 rows are candidates.
 """
 

@@ -42,7 +42,7 @@ def run_import(
     clock: Clock,
     *,
     valkey: Valkey,
-) -> dict:
+) -> dict[str, Any]:
     """Imports both sources in one transaction and commits it, then invalidates the API cache if any
     place changed. `conn` must have no transaction open.
 

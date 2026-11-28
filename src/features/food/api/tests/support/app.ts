@@ -4,6 +4,7 @@ import { createFoodApp } from "../../app";
 import { systemClock, type Clock } from "../../clock";
 import { loadDistrictIds } from "../../config";
 import { createPgPool } from "../../db";
+import type { ImgproxySigner } from "../../imgproxy";
 import type { Logger } from "../../logger";
 import { createMetrics } from "../../metrics";
 import { createFoodRepository } from "../../repository";
@@ -28,9 +29,17 @@ export interface TestAppOptions {
   databaseUrl: string;
   valkeyUrl?: string;
   clock?: Clock;
+  signer?: ImgproxySigner;
 }
 
-export function createTestApp({ databaseUrl, valkeyUrl = CLOSED_VALKEY_URL, clock = systemClock }: TestAppOptions) {
+const FAKE_SIGNER: ImgproxySigner = { sign: (s3Key, width) => `https://img.example.test/${width}/${s3Key}` };
+
+export function createTestApp({
+  databaseUrl,
+  valkeyUrl = CLOSED_VALKEY_URL,
+  clock = systemClock,
+  signer = FAKE_SIGNER,
+}: TestAppOptions) {
   const sql = createPgPool(databaseUrl);
   const logs: LogEntry[] = [];
   const logger: Logger = {
@@ -43,7 +52,7 @@ export function createTestApp({ databaseUrl, valkeyUrl = CLOSED_VALKEY_URL, cloc
     config: { districtIds, corsAllowedOrigins: ["https://map.example.test"] },
     repo: createFoodRepository(sql),
     cache,
-    signer: { sign: (s3Key, width) => `https://img.example.test/${width}/${s3Key}` },
+    signer,
     logger,
   });
 

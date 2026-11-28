@@ -8,6 +8,7 @@ import logging
 import os
 import re
 from pathlib import Path
+from typing import Any
 from urllib.parse import unquote
 
 import boto3
@@ -24,7 +25,7 @@ USER_AGENT = "AparajeyoFoodSync/0.1 (https://aparajeyo.com)"
 log = logging.getLogger(__name__)
 
 
-def extract_commons_title(tags: dict) -> str | None:
+def extract_commons_title(tags: dict[str, Any]) -> str | None:
     wm = tags.get("wikimedia_commons")
     if isinstance(wm, str) and wm.strip():
         val = wm.strip()
@@ -60,7 +61,7 @@ def strip_html(value: str | None) -> str:
     return re.sub(r"<[^>]+>", "", value or "").strip()
 
 
-def get_s3_client():
+def get_s3_client() -> tuple[Any, str | None]:
     endpoint = os.environ.get("S3_ENDPOINT", "http://127.0.0.1:3900")
     access_key = os.environ.get("S3_ACCESS_KEY", "")
     secret_key = os.environ.get("S3_SECRET_KEY", "")
@@ -77,7 +78,7 @@ def get_s3_client():
     return client, bucket
 
 
-def fetch_commons_photo(client: httpx.Client, title: str) -> dict | None:
+def fetch_commons_photo(client: httpx.Client, title: str) -> dict[str, Any] | None:
     resp = client.get(
         COMMONS_API,
         params={
@@ -131,7 +132,7 @@ def fetch_commons_photo(client: httpx.Client, title: str) -> dict | None:
     return None
 
 
-def sync_photos(database_url: str, limit: int = 100) -> dict:
+def sync_photos(database_url: str, limit: int = 100) -> dict[str, Any]:
     conn = get_pg_connection(database_url)
     s3_client, s3_bucket = get_s3_client()
 
@@ -141,7 +142,8 @@ def sync_photos(database_url: str, limit: int = 100) -> dict:
             SELECT id::text AS id, tags
             FROM places
             WHERE overlay_type = 'food' AND is_active AND NOT is_hidden
-              AND (tags ? 'wikimedia_commons' OR tags ? 'wikidata' OR (tags->>'image') LIKE '%%commons.wikimedia.org%%')
+              AND (tags ? 'wikimedia_commons' OR tags ? 'wikidata'
+                   OR (tags->>'image') LIKE '%%commons.wikimedia.org%%')
             LIMIT %s
             """,
             (limit,),

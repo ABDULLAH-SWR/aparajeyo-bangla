@@ -51,22 +51,22 @@
     },
     {
       "type": "Feature",
-      "id": "f00d1001-0000-4000-8000-000000000003",
+      "id": "f00d1001-0000-4000-8000-000000000007",
       "geometry": {
         "type": "Point",
-        "coordinates": [91.8718, 24.8949]
+        "coordinates": [91.8215, 22.3592]
       },
       "properties": {
-        "id": "f00d1001-0000-4000-8000-000000000003",
+        "id": "f00d1001-0000-4000-8000-000000000007",
         "pin_type": "food_poi",
-        "district_id": "BD6091",
-        "upazila_id": "BD60915000",
-        "name_en": "Example Surma Seven-Layer Tea Cabin",
-        "name_bn": "উদাহরণ সুরমা সাতরঙা চা কেবিন",
-        "category": "tea_stall",
+        "district_id": "BD2015",
+        "upazila_id": "BD20151600",
+        "name_en": "Example GEC Food Hub Court",
+        "name_bn": "উদাহরণ জিইসি ফুড হাব কোর্ট",
+        "category": "food_court",
         "has_video": true,
-        "thumbnail_url": "https://img.aparajeyo.com/demo_hmac_sig_03/rs:fit:320:0/plain/s3://food-media/photos/food/f00d1001-0000-4000-8000-000000000003/c3d4e5f6.webp",
-        "source": "osm"
+        "thumbnail_url": null,
+        "source": "overture"
       }
     },
     {
@@ -91,22 +91,42 @@
     },
     {
       "type": "Feature",
-      "id": "f00d1001-0000-4000-8000-000000000005",
+      "id": "f00d1001-0000-4000-8000-000000000010",
       "geometry": {
         "type": "Point",
-        "coordinates": [90.4125, 23.7925]
+        "coordinates": [91.9738, 21.4432]
       },
       "properties": {
-        "id": "f00d1001-0000-4000-8000-000000000005",
+        "id": "f00d1001-0000-4000-8000-000000000010",
         "pin_type": "food_poi",
-        "district_id": "BD3026",
-        "upazila_id": "BD30262500",
-        "name_en": "Example Gulshan Roastery Cafe",
-        "name_bn": "উদাহরণ গুলশান রোস্টারি ক্যাফে",
-        "category": "cafe",
-        "has_video": false,
-        "thumbnail_url": "https://img.aparajeyo.com/demo_hmac_sig_05/rs:fit:320:0/plain/s3://food-media/photos/food/f00d1001-0000-4000-8000-000000000005/e5f6a7b8.webp",
-        "source": "overture"
+        "district_id": "BD2022",
+        "upazila_id": "BD20220024",
+        "name_en": "Example Laboni Seafood Grill",
+        "name_bn": null,
+        "category": "restaurant",
+        "has_video": true,
+        "thumbnail_url": "https://img.aparajeyo.com/demo_hmac_sig_10/rs:fit:320:0/plain/s3://food-media/photos/food/f00d1001-0000-4000-8000-000000000010/f6a7b8c9.webp",
+        "source": "osm"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "f00d1001-0000-4000-8000-000000000003",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [91.8718, 24.8949]
+      },
+      "properties": {
+        "id": "f00d1001-0000-4000-8000-000000000003",
+        "pin_type": "food_poi",
+        "district_id": "BD6091",
+        "upazila_id": "BD60915000",
+        "name_en": "Example Surma Seven-Layer Tea Cabin",
+        "name_bn": "উদাহরণ সুরমা সাতরঙা চা কেবিন",
+        "category": "tea_stall",
+        "has_video": true,
+        "thumbnail_url": "https://img.aparajeyo.com/demo_hmac_sig_03/rs:fit:320:0/plain/s3://food-media/photos/food/f00d1001-0000-4000-8000-000000000003/c3d4e5f6.webp",
+        "source": "osm"
       }
     },
     {
@@ -131,42 +151,22 @@
     },
     {
       "type": "Feature",
-      "id": "f00d1001-0000-4000-8000-000000000007",
+      "id": "f00d1001-0000-4000-8000-000000000005",
       "geometry": {
         "type": "Point",
-        "coordinates": [91.8215, 22.3592]
+        "coordinates": [90.4125, 23.7925]
       },
       "properties": {
-        "id": "f00d1001-0000-4000-8000-000000000007",
+        "id": "f00d1001-0000-4000-8000-000000000005",
         "pin_type": "food_poi",
-        "district_id": "BD2015",
-        "upazila_id": "BD20151600",
-        "name_en": "Example GEC Food Hub Court",
-        "name_bn": "উদাহরণ জিইসি ফুড হাব কোর্ট",
-        "category": "food_court",
-        "has_video": true,
-        "thumbnail_url": null,
-        "source": "overture"
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "f00d1001-0000-4000-8000-000000000008",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [92.0156, 21.4661]
-      },
-      "properties": {
-        "id": "f00d1001-0000-4000-8000-000000000008",
-        "pin_type": "food_poi",
-        "district_id": "BD2022",
-        "upazila_id": "BD20220024",
-        "name_en": null,
-        "name_bn": "উদাহরণ সাগর পাড়ের আইসক্রিম ও দই ঘর",
-        "category": "dessert",
+        "district_id": "BD3026",
+        "upazila_id": "BD30262500",
+        "name_en": "Example Gulshan Roastery Cafe",
+        "name_bn": "উদাহরণ গুলশান রোস্টারি ক্যাফে",
+        "category": "cafe",
         "has_video": false,
-        "thumbnail_url": null,
-        "source": "osm"
+        "thumbnail_url": "https://img.aparajeyo.com/demo_hmac_sig_05/rs:fit:320:0/plain/s3://food-media/photos/food/f00d1001-0000-4000-8000-000000000005/e5f6a7b8.webp",
+        "source": "overture"
       }
     },
     {
@@ -191,22 +191,22 @@
     },
     {
       "type": "Feature",
-      "id": "f00d1001-0000-4000-8000-000000000010",
+      "id": "f00d1001-0000-4000-8000-000000000012",
       "geometry": {
         "type": "Point",
-        "coordinates": [91.9738, 21.4432]
+        "coordinates": [89.3778, 24.8465]
       },
       "properties": {
-        "id": "f00d1001-0000-4000-8000-000000000010",
+        "id": "f00d1001-0000-4000-8000-000000000012",
         "pin_type": "food_poi",
-        "district_id": "BD2022",
-        "upazila_id": "BD20220024",
-        "name_en": "Example Laboni Seafood Grill",
-        "name_bn": null,
-        "category": "restaurant",
-        "has_video": true,
-        "thumbnail_url": "https://img.aparajeyo.com/demo_hmac_sig_10/rs:fit:320:0/plain/s3://food-media/photos/food/f00d1001-0000-4000-8000-000000000010/f6a7b8c9.webp",
-        "source": "osm"
+        "district_id": "BD5010",
+        "upazila_id": "BD50100020",
+        "name_en": "Example Satmatha Chotpoti Cart",
+        "name_bn": "উদাহরণ সাতমাথা চটপটি ভ্যান",
+        "category": "street_food",
+        "has_video": false,
+        "thumbnail_url": null,
+        "source": "overture"
       }
     },
     {
@@ -231,22 +231,22 @@
     },
     {
       "type": "Feature",
-      "id": "f00d1001-0000-4000-8000-000000000012",
+      "id": "f00d1001-0000-4000-8000-000000000008",
       "geometry": {
         "type": "Point",
-        "coordinates": [89.3778, 24.8465]
+        "coordinates": [92.0156, 21.4661]
       },
       "properties": {
-        "id": "f00d1001-0000-4000-8000-000000000012",
+        "id": "f00d1001-0000-4000-8000-000000000008",
         "pin_type": "food_poi",
-        "district_id": "BD5010",
-        "upazila_id": "BD50100020",
-        "name_en": "Example Satmatha Chotpoti Cart",
-        "name_bn": "উদাহরণ সাতমাথা চটপটি ভ্যান",
-        "category": "street_food",
+        "district_id": "BD2022",
+        "upazila_id": "BD20220024",
+        "name_en": null,
+        "name_bn": "উদাহরণ সাগর পাড়ের আইসক্রিম ও দই ঘর",
+        "category": "dessert",
         "has_video": false,
         "thumbnail_url": null,
-        "source": "overture"
+        "source": "osm"
       }
     }
   ]

@@ -1,7 +1,7 @@
 """The staging table both sources share, and its SQL (Guide Appendix A.11).
 
-geo_districts and geo_upazilas are keyed by `id` here, not by the appendix's district_id / upazila_id.
-Every function runs inside the caller's transaction.
+geo_districts and geo_upazilas are keyed by `id` here, not by the appendix's district_id /
+upazila_id. Every function runs inside the caller's transaction.
 """
 
 from __future__ import annotations
@@ -9,6 +9,10 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
+from typing import Any
+
+import psycopg
+from psycopg.rows import DictRow
 
 from food_shared.bangla_norm import normalize_match_key, transliterate_bn_for_matching
 from food_shared.db import stable_uuid_v4
@@ -28,14 +32,14 @@ class Candidate:
     name_bn: str | None
     category: str
     cuisines: list[str]
-    tags: dict
+    tags: dict[str, Any]
     source_license: str
     source_confidence: float | None
     lng: float
     lat: float
 
 
-def create_candidates(cur, candidates: list[Candidate]) -> None:
+def create_candidates(cur: psycopg.Cursor[DictRow], candidates: list[Candidate]) -> None:
     cur.execute(
         """
         CREATE TEMP TABLE tmp_food_candidates (
@@ -84,7 +88,7 @@ def create_candidates(cur, candidates: list[Candidate]) -> None:
             )
 
 
-def assign_admin_areas(cur) -> None:
+def assign_admin_areas(cur: psycopg.Cursor[DictRow]) -> None:
     cur.execute(
         """
         UPDATE tmp_food_candidates c SET district_id = (
@@ -93,8 +97,8 @@ def assign_admin_areas(cur) -> None:
           ORDER BY gd.id LIMIT 1)
         """
     )
-    # The && prefilter (0.025 degrees is at least 2.5 km here) lets the GiST index skip distant polygons:
-    # the Overture bbox holds many points outside Bangladesh.
+    # The && prefilter (0.025 degrees is at least 2.5 km here) lets the GiST index skip
+    # distant polygons: the Overture bbox holds many points outside Bangladesh.
     cur.execute(
         """
         UPDATE tmp_food_candidates c SET district_id = (
@@ -127,7 +131,7 @@ def assign_admin_areas(cur) -> None:
     )
 
 
-def reject_unassigned(cur, run_id: int) -> int:
+def reject_unassigned(cur: psycopg.Cursor[DictRow], run_id: int) -> int:
     """Records, then drops, the candidates that no district claimed."""
     cur.execute(
         """
@@ -144,7 +148,7 @@ def reject_unassigned(cur, run_id: int) -> int:
     return rejected
 
 
-def require_complete_source(cur, source: str) -> None:
+def require_complete_source(cur: psycopg.Cursor[DictRow], source: str) -> None:
     """Raises unless the source has candidates for at least 80 % of its currently active rows."""
     cur.execute(
         """
@@ -155,14 +159,14 @@ def require_complete_source(cur, source: str) -> None:
         """,
         {"source": source},
     )
-    row = cur.fetchone()
+    (row,) = cur.fetchall()
     if row["candidates"] * 5 < row["active"] * 4:
         raise ImportSanityError(
             f"{source}: {row['candidates']} candidates for {row['active']} active rows (below 80 %)"
         )
 
 
-def upsert_places(cur) -> None:
+def upsert_places(cur: psycopg.Cursor[DictRow]) -> None:
     cur.execute(
         """
         INSERT INTO places AS p (id, overlay_type, source, source_id, district_id, upazila_id, geom,
@@ -201,7 +205,7 @@ def upsert_places(cur) -> None:
     )
 
 
-def deactivate_missing(cur, source: str) -> None:
+def deactivate_missing(cur: psycopg.Cursor[DictRow], source: str) -> None:
     """Counts a missed import for each of the source's rows absent from staging; the second miss
     deactivates the row."""
     cur.execute(
@@ -221,10 +225,11 @@ def deactivate_missing(cur, source: str) -> None:
     )
 
 
-def count_changed_places(cur) -> int:
+def count_changed_places(cur: psycopg.Cursor[DictRow]) -> int:
     """Places this transaction inserted or visibly changed: every such write sets updated_at to the
     transaction's now()."""
     cur.execute(
         "SELECT COUNT(*) AS changed FROM places WHERE overlay_type = 'food' AND updated_at = now()"
     )
-    return cur.fetchone()["changed"]
+    (row,) = cur.fetchall()
+    return int(row["changed"])

@@ -7,6 +7,10 @@ from __future__ import annotations
 
 import json
 import os
+from typing import Any
+
+import psycopg
+from psycopg.rows import DictRow
 
 from food_photo_sync.sync_photos import get_s3_client
 from food_shared.config import load_env_files, require
@@ -19,7 +23,7 @@ DB_LICENSE_PATTERN = (
 )
 
 
-def purge_nonfree(conn, s3_client, bucket: str) -> dict:
+def purge_nonfree(conn: psycopg.Connection[DictRow], s3_client: Any, bucket: str) -> dict[str, int]:
     rows = conn.execute(
         "SELECT id, s3_key FROM place_photos WHERE license !~ %s", (DB_LICENSE_PATTERN,)
     ).fetchall()
@@ -35,7 +39,7 @@ def main() -> None:
     load_env_files()
     (database_url,) = require(os.environ, "DATABASE_URL")
     s3_client, bucket = get_s3_client()
-    if s3_client is None:
+    if s3_client is None or bucket is None:
         raise SystemExit("S3_ACCESS_KEY and S3_SECRET_KEY are required to delete mirrored files")
     with get_pg_connection(database_url) as conn:
         print(json.dumps(purge_nonfree(conn, s3_client, bucket)))

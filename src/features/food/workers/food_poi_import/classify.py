@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
 
-def extract_cuisines(search_blob: str, category: str, cmap: dict) -> list[str]:
+
+def extract_cuisines(search_blob: str, category: str, cmap: dict[str, Any]) -> list[str]:
     cuisines: list[str] = []
     for slug, keywords in cmap["cuisine_keywords"].items():
         if any(kw in search_blob for kw in keywords):
@@ -13,7 +15,7 @@ def extract_cuisines(search_blob: str, category: str, cmap: dict) -> list[str]:
     return cuisines or ["other"]
 
 
-def classify_osm_tags(tags: dict[str, str], cmap: dict) -> tuple[str | None, list[str]]:
+def classify_osm_tags(tags: dict[str, str], cmap: dict[str, Any]) -> tuple[str | None, list[str]]:
     amenity = (tags.get("amenity") or "").strip().lower()
     shop = (tags.get("shop") or "").strip().lower()
     cuisine_raw = (tags.get("cuisine") or "").strip().lower()
@@ -49,7 +51,9 @@ def classify_osm_tags(tags: dict[str, str], cmap: dict) -> tuple[str | None, lis
     return category, extract_cuisines(f"{cuisine_raw} {name_blob}", category, cmap)
 
 
-def classify_overture_row(row: dict, cmap: dict) -> tuple[str | None, list[str]]:
+def classify_overture_row(
+    row: dict[str, Any], cmap: dict[str, Any]
+) -> tuple[str | None, list[str]]:
     tax = row.get("taxonomy") or {}
     primary = (tax.get("primary") or "").lower()
     hierarchy = [h.lower() for h in (tax.get("hierarchy") or [])]

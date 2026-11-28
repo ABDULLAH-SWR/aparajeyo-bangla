@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 import httpx
 
@@ -18,14 +19,14 @@ PINS_PATH = "/api/v1/pins"
 CONCURRENCY = 4
 
 
-def warm(api_base_url: str, district_ids: list[str]) -> dict:
+def warm(api_base_url: str, district_ids: list[str]) -> dict[str, Any]:
     """Every request is attempted; a failed one then raises."""
     queries = [{"overlay": "food"}] + [
         {"overlay": "food", "district_id": district_id} for district_id in district_ids
     ]
     with httpx.Client(base_url=api_base_url, timeout=30.0) as client:
 
-        def request(query: dict) -> None:
+        def request(query: dict[str, str]) -> None:
             client.get(PINS_PATH, params=query).raise_for_status()
 
         with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:

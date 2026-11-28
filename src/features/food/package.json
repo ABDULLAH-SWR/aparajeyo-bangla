@@ -4,7 +4,7 @@
   "scripts": {
     "dev:up": "bash scripts/dev-up.sh",
     "dev": "bun api/server.ts",
-    "test:scripts": "bash scripts/tests/check-secrets.test.sh && bash scripts/tests/sync-contract.test.sh"
+    "test:scripts": "bash scripts/tests/check-secrets.test.sh && bash scripts/tests/sync-contract.test.sh && bash scripts/tests/check-boundary.test.sh && bash scripts/tests/flake-gate.test.sh"
   },
   "dependencies": {
     "hono": "4.13.22",

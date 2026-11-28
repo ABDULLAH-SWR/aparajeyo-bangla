@@ -10,7 +10,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: [
-            "tests/contract/{mocks,gen_enums}.test.ts",
+            "tests/contract/{mocks,gen_enums,mocks_to_seed}.test.ts",
             "tests/{config.test.ts,client/constants.test.ts}",
             "tests/media/**/*.test.ts",
           ],
@@ -24,7 +24,7 @@ export default defineConfig({
             "tests/boot.test.ts",
             "tests/{http,cache,harness}/**/*.test.ts",
             "tests/client/food_service.test.ts",
-            "tests/contract/enum_parity.test.ts",
+            "tests/contract/{enum_parity,parity_matrix,mock_roundtrip}.test.ts",
           ],
           globalSetup: ["tests/support/global-setup.ts"],
           setupFiles: ["tests/support/setup.ts"],

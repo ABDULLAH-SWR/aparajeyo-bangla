@@ -1,4 +1,5 @@
-"""Shared helpers for importer tests (seam S7): fixture sources, variants of them, and one import."""
+"""Shared helpers for importer tests (seam S7): fixture sources, variants of them, and one
+import."""
 
 from __future__ import annotations
 
@@ -40,7 +41,7 @@ def places(db) -> dict[str, dict]:
 
 def osm_variant(directory: Path, *, drop: tuple[str, ...] = (), add: tuple[dict, ...] = ()) -> Path:
     """The OSM fixture without the `drop` elements ("node/4") and with extra restaurant nodes."""
-    tree = ET.parse(OSM_FIXTURE)
+    tree = ET.parse(OSM_FIXTURE)  # noqa: S314  (the committed fixture)
     root = tree.getroot()
     for element in list(root):
         if f"{element.tag}/{element.get('id')}" in drop:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import Any
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -61,7 +62,7 @@ def download_overture_if_needed(use_cache: bool = True) -> Path:
     return OVERTURE_CACHE_PATH
 
 
-def _names(names_obj: dict | None) -> tuple[str | None, str | None]:
+def _names(names_obj: dict[str, Any] | None) -> tuple[str | None, str | None]:
     if not names_obj:
         return None, None
     common_raw = names_obj.get("common")
@@ -77,7 +78,7 @@ def _names(names_obj: dict | None) -> tuple[str | None, str | None]:
     return resolve_bilingual_names(names_obj.get("primary"), common.get("en"), common.get("bn"))
 
 
-def read_candidates(path: Path, cmap: dict) -> list[Candidate]:
+def read_candidates(path: Path, cmap: dict[str, Any]) -> list[Candidate]:
     candidates: list[Candidate] = []
     for row in pq.read_table(path).to_pylist():
         confidence = float(row.get("confidence") or 0.0)

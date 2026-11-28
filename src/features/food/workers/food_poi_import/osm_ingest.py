@@ -1,4 +1,5 @@
-"""OpenStreetMap source: Geofabrik download, osm2pgsql Flex load (food.lua) and candidate extraction."""
+"""OpenStreetMap source: Geofabrik download, osm2pgsql Flex load (food.lua) and candidate
+extraction."""
 
 from __future__ import annotations
 
@@ -7,9 +8,11 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import httpx
 import psycopg
+from psycopg.rows import DictRow
 
 from food_poi_import.classify import classify_osm_tags
 from food_poi_import.staging import Candidate
@@ -81,7 +84,7 @@ def load_osm_staging(osm_path: Path, info: psycopg.ConnectionInfo) -> None:
         f"--host={host}",
         f"--port={info.port}",
         f"--database={info.dbname}",
-        f"--username={info.user}",
+        f"--user={info.user}",
     ]
     env = os.environ | {"PGPASSWORD": info.password}
 
@@ -99,13 +102,15 @@ def load_osm_staging(osm_path: Path, info: psycopg.ConnectionInfo) -> None:
             "iboates/osm2pgsql:latest",
             "osm2pgsql", *args, "--style=/style/food.lua", f"/input/{osm.name}",
         ]  # fmt: skip
-    subprocess.run(cmd, env=env, check=True)
+    # A fixed program with arguments built here, and no shell.
+    subprocess.run(cmd, env=env, check=True)  # noqa: S603
 
 
-def read_candidates(cur, cmap: dict) -> list[Candidate]:
+def read_candidates(cur: psycopg.Cursor[DictRow], cmap: dict[str, Any]) -> list[Candidate]:
     """Classifies the staged features, then drops what osm2pgsql left in the staging schema."""
     cur.execute(
-        f"SELECT osm_type, osm_id, tags, ST_X(geom) AS lng, ST_Y(geom) AS lat"
+        # Only the constant schema name is interpolated.
+        f"SELECT osm_type, osm_id, tags, ST_X(geom) AS lng, ST_Y(geom) AS lat"  # noqa: S608
         f" FROM {STAGING_SCHEMA}.osm_food_staging ORDER BY osm_type, osm_id"
     )
     candidates: list[Candidate] = []
@@ -135,8 +140,9 @@ def read_candidates(cur, cmap: dict) -> list[Candidate]:
                 lat=row["lat"],
             )
         )
-    # osm2pgsql's properties table too: left behind, it belongs to whoever ran first (the owner role,
-    # when it also loads the boundaries) and the next food_worker run may not write to it.
+    # osm2pgsql's properties table too: left behind, it belongs to whoever ran first (the
+    # owner role, when it also loads the boundaries) and the next food_worker run may not
+    # write to it.
     cur.execute(
         f"DROP TABLE IF EXISTS {STAGING_SCHEMA}.osm_food_staging,"
         f" {STAGING_SCHEMA}.osm2pgsql_properties"

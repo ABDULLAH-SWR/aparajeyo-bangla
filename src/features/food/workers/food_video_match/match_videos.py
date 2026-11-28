@@ -1,4 +1,5 @@
-"""Matches indexed YouTube videos to PostGIS food places using csebuetnlp/normalizer & chapters (Guide §5.10)."""
+"""Matches indexed YouTube videos to PostGIS food places using csebuetnlp/normalizer and
+chapters (Guide §5.10)."""
 
 from __future__ import annotations
 
@@ -6,12 +7,13 @@ import json
 import os
 import re
 from difflib import SequenceMatcher
+from typing import Any
 
 from food_shared.bangla_norm import normalize_match_key, transliterate_bn_for_matching
 from food_shared.config import load_env_files, load_geo_codes, require
 from food_shared.db import get_pg_connection
 
-CHAPTER_RE = re.compile(r"^\s*(?:(\d+):)?(\d{1,2}):(\d{2})\s+[-–|:]?\s*(.+)$", re.MULTILINE)
+CHAPTER_RE = re.compile(r"^\s*(?:(\d+):)?(\d{1,2}):(\d{2})\s+[-\u2013|:]?\s*(.+)$", re.MULTILINE)
 
 AREA_ALIASES = {
     "old dhaka": "BD3026",
@@ -29,7 +31,7 @@ AREA_ALIASES = {
 }
 
 
-def detect_candidate_districts(text: str, geo_codes: dict) -> set[str]:
+def detect_candidate_districts(text: str, geo_codes: dict[str, Any]) -> set[str]:
     lower = text.lower()
     matched: set[str] = set()
     for alias, pcode in AREA_ALIASES.items():
@@ -51,15 +53,15 @@ def similarity(a: str, b: str) -> float:
 
 def match_segment(
     segment_text: str,
-    candidates: list[dict],
+    candidates: list[dict[str, Any]],
     *,
     district_detected: bool,
     chapter_line: bool,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Scores one title or chapter line against candidate places, best match first."""
     seg_norm = normalize_match_key(segment_text)
     seg_roman = transliterate_bn_for_matching(segment_text)
-    matches: list[dict] = []
+    matches: list[dict[str, Any]] = []
 
     for p in candidates:
         if len(p["norm_en"]) < 4 and len(p["norm_bn"]) < 4:
@@ -82,7 +84,7 @@ def match_segment(
     return sorted(matches, key=lambda m: m["confidence"], reverse=True)
 
 
-def run_matching(database_url: str) -> dict:
+def run_matching(database_url: str) -> dict[str, Any]:
     conn = get_pg_connection(database_url)
     geo = load_geo_codes(os.environ)
 
@@ -94,11 +96,12 @@ def run_matching(database_url: str) -> dict:
             return {"videos_checked": 0, "matches_upserted": 0}
 
         cur.execute(
-            "SELECT id::text AS id, district_id, name_en, name_bn FROM places WHERE overlay_type = 'food' AND is_active AND NOT is_hidden"
+            "SELECT id::text AS id, district_id, name_en, name_bn FROM places"
+            " WHERE overlay_type = 'food' AND is_active AND NOT is_hidden"
         )
         places = cur.fetchall()
 
-    places_by_dist: dict[str, list[dict]] = {}
+    places_by_dist: dict[str, list[dict[str, Any]]] = {}
     for p in places:
         places_by_dist.setdefault(p["district_id"], []).append(
             {
@@ -146,7 +149,8 @@ def run_matching(database_url: str) -> dict:
                         ON CONFLICT (video_id, place_id) DO UPDATE SET
                           confidence = EXCLUDED.confidence,
                           method = EXCLUDED.method,
-                          start_seconds = COALESCE(EXCLUDED.start_seconds, video_place_matches.start_seconds)
+                          start_seconds = COALESCE(
+                            EXCLUDED.start_seconds, video_place_matches.start_seconds)
                         """,
                         (v["video_id"], matches[0]["place_id"], conf, method, start_sec, status),
                     )

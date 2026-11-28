@@ -1,6 +1,12 @@
-"""Merges Overture duplicates into OSM survivors: 50 m, same category, pg_trgm similarity (Guide §5.4)."""
+"""Merges Overture duplicates into OSM survivors (Guide §5.4): 50 m, same category,
+pg_trgm similarity."""
 
 from __future__ import annotations
+
+from typing import Any
+
+import psycopg
+from psycopg.rows import DictRow
 
 # Name similarity at which a pair is merged, or else queued for review.
 AUTO_MERGE_SIMILARITY = 0.55
@@ -9,7 +15,7 @@ REVIEW_SIMILARITY = 0.35
 CONTACT_KEYS = ("phone", "website", "addr:full")
 
 
-def keep_merged_details(cur) -> None:
+def keep_merged_details(cur: psycopg.Cursor[DictRow]) -> None:
     """Reapplies to staged survivors what they took from their merged duplicates, so that the upsert
     neither discards it nor reports a change. As in conflation, the earlier merge wins."""
     cur.execute(
@@ -30,8 +36,10 @@ def keep_merged_details(cur) -> None:
         ),
         names AS (
           SELECT cand_id,
-                 (array_agg(name_en ORDER BY position) FILTER (WHERE name_en IS NOT NULL))[1] AS name_en,
-                 (array_agg(name_bn ORDER BY position) FILTER (WHERE name_bn IS NOT NULL))[1] AS name_bn
+                 (array_agg(name_en ORDER BY position)
+                    FILTER (WHERE name_en IS NOT NULL))[1] AS name_en,
+                 (array_agg(name_bn ORDER BY position)
+                    FILTER (WHERE name_bn IS NOT NULL))[1] AS name_bn
           FROM merged GROUP BY cand_id
         ),
         contact AS (
@@ -55,8 +63,9 @@ def keep_merged_details(cur) -> None:
     )
 
 
-def conflate_osm_and_overture(cur) -> dict:
-    """Merges or queues each Overture row with its best OSM match: the most similar, then the nearest."""
+def conflate_osm_and_overture(cur: psycopg.Cursor[DictRow]) -> dict[str, int]:
+    """Merges or queues each Overture row with its best OSM match: the most similar, then the
+    nearest."""
     thresholds = {"merge": AUTO_MERGE_SIMILARITY, "review": REVIEW_SIMILARITY}
     # Materialised because merging deactivates rows that the matching reads. The thresholds are cast
     # to real, the type of similarity(), so that a score equal to a threshold reaches it.
@@ -108,8 +117,10 @@ def conflate_osm_and_overture(cur) -> dict:
         survivor AS (
           SELECT osm_id,
                  array_agg(source_id ORDER BY position) AS source_ids,
-                 (array_agg(name_en ORDER BY position) FILTER (WHERE name_en IS NOT NULL))[1] AS name_en,
-                 (array_agg(name_bn ORDER BY position) FILTER (WHERE name_bn IS NOT NULL))[1] AS name_bn
+                 (array_agg(name_en ORDER BY position)
+                    FILTER (WHERE name_en IS NOT NULL))[1] AS name_en,
+                 (array_agg(name_bn ORDER BY position)
+                    FILTER (WHERE name_bn IS NOT NULL))[1] AS name_bn
           FROM merged GROUP BY osm_id
         ),
         contact AS (
@@ -147,7 +158,8 @@ def conflate_osm_and_overture(cur) -> dict:
     )
     cur.execute(
         """
-        INSERT INTO conflation_review_queue (primary_place_id, candidate_place_id, distance_m, name_similarity)
+        INSERT INTO conflation_review_queue
+          (primary_place_id, candidate_place_id, distance_m, name_similarity)
         SELECT osm_id, ovt_id, round(dist_m::numeric, 2), round(name_sim::numeric, 2)
         FROM tmp_food_matches
         WHERE NOT auto_merge
@@ -163,10 +175,11 @@ def conflate_osm_and_overture(cur) -> dict:
         FROM tmp_food_matches
         """
     )
-    return dict(cur.fetchone())
+    (counts,) = cur.fetchall()
+    return dict(counts)
 
 
-def backfill_merged_into(conn) -> int:
+def backfill_merged_into(conn: psycopg.Connection[Any]) -> int:
     """Recomputes survivor -> loser pairs from merged_source_ids (Slice 0B.8)."""
     with conn.cursor() as cur:
         cur.execute(
@@ -176,7 +189,8 @@ def backfill_merged_into(conn) -> int:
             FROM (
               SELECT DISTINCT ON (member.source_id) member.source_id, s.id AS survivor_id
               FROM places s
-              CROSS JOIN LATERAL jsonb_array_elements_text(s.merged_source_ids) AS member (source_id)
+              CROSS JOIN LATERAL jsonb_array_elements_text(s.merged_source_ids)
+                                 AS member (source_id)
               WHERE s.overlay_type = 'food' AND s.source = 'osm'
               ORDER BY member.source_id, s.is_active DESC, s.updated_at DESC, s.id
             ) pair

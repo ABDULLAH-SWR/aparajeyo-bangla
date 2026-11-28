@@ -1,4 +1,5 @@
-"""contract/food_enums.json (generated from the TypeScript tuples) bounds what the importer emits."""
+"""contract/food_enums.json (generated from the TypeScript tuples) bounds what the importer
+emits."""
 
 from __future__ import annotations
 

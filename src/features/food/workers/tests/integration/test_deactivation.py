@@ -53,6 +53,7 @@ def test_c3_a_truncated_source_aborts_the_run_and_changes_nothing(import_db, tmp
 def snapshot(db) -> dict:
     tables = ("places", "sync_runs", "food_import_rejects", "conflation_review_queue")
     return {
-        t: db.conn.execute(f"SELECT t::text AS row FROM {t} t ORDER BY 1").fetchall()
+        # The table names are the literals above.
+        t: db.conn.execute(f"SELECT t::text AS row FROM {t} t ORDER BY 1").fetchall()  # noqa: S608
         for t in tables
     }

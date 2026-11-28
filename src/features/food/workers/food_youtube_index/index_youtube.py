@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+from typing import Any
 
 import httpx
 
@@ -32,7 +33,8 @@ def register_channel(database_url: str, channel_id: str, title: str) -> None:
     with conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO youtube_channels (channel_id, uploads_playlist_id, title, overlay_type, is_active)
+            INSERT INTO youtube_channels
+              (channel_id, uploads_playlist_id, title, overlay_type, is_active)
             VALUES (%s, %s, %s, 'food', true)
             ON CONFLICT (channel_id) DO UPDATE SET title = EXCLUDED.title, is_active = true
             """,
@@ -42,7 +44,7 @@ def register_channel(database_url: str, channel_id: str, title: str) -> None:
     conn.close()
 
 
-def index_channels(database_url: str, max_pages_per_channel: int = 5) -> dict:
+def index_channels(database_url: str, max_pages_per_channel: int = 5) -> dict[str, Any]:
     api_key = os.environ.get("YOUTUBE_API_KEY", "").strip()
     if not api_key:
         return {"status": "skipped", "reason": "YOUTUBE_API_KEY not configured", "quota_units": 0}

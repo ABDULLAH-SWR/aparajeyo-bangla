@@ -25,6 +25,16 @@ def _square(lng: float, lat: float) -> str:
     return "MULTIPOLYGON(((" + ",".join(f"{x} {y}" for x, y in ring) + ")))"
 
 
+def service_url(variable: str) -> str:
+    """Where a service is. Unset, the test is skipped, but fails in CI, where a skip passes."""
+    url = os.environ.get(variable)
+    if url:
+        return url
+    if os.environ.get("CI"):
+        pytest.fail(f"{variable} is not set")
+    pytest.skip(f"{variable} is not set")
+
+
 class FoodDb:
     def __init__(self, url: str):
         self.url = url
@@ -91,7 +101,8 @@ class FoodDb:
         columns = ", ".join(row)
         values = ", ".join(["%s"] * len(row))
         inserted = self.conn.execute(
-            f"INSERT INTO {table} ({columns}) VALUES ({values}) RETURNING {returning}",
+            # Table and column names come from this class; values are bound.
+            f"INSERT INTO {table} ({columns}) VALUES ({values}) RETURNING {returning}",  # noqa: S608
             list(row.values()),
         ).fetchone()
         assert inserted is not None
@@ -101,10 +112,7 @@ class FoodDb:
 @pytest.fixture
 def valkey_db():
     """An empty logical database. The API cache tests use 11-15, dev keys 0 and Directus 1."""
-    url = os.environ.get("VALKEY_URL")
-    if not url:
-        pytest.skip("VALKEY_URL is not set")
-    parts = urlsplit(url)
+    parts = urlsplit(service_url("VALKEY_URL"))
     client = valkey.from_url(urlunsplit(parts._replace(path="/10")), decode_responses=True)
     client.flushdb()
     try:
@@ -125,9 +133,7 @@ def import_db(food_db, valkey_db):
 
 @pytest.fixture
 def food_db(monkeypatch):
-    owner_url = os.environ.get("DATABASE_URL_OWNER")
-    if not owner_url:
-        pytest.skip("DATABASE_URL_OWNER is not set")
+    owner_url = service_url("DATABASE_URL_OWNER")
     name = f"food_pytest_{uuid.uuid4().hex[:12]}"
     parts = urlsplit(owner_url)
     url = urlunsplit(parts._replace(path=f"/{name}"))

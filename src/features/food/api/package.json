@@ -8,7 +8,8 @@
     "test:unit": "bun --bun vitest run --project unit",
     "test:integration": "bun test tests/repo && bun --bun vitest run --project integration",
     "test:types": "bun --bun vitest run --project types",
-    "contract:check": "bun ../scripts/validate-mocks.ts",
+    "test:migrations": "bash ../scripts/test-migrations.sh",
+    "contract:check": "bash ../scripts/sync-contract.sh --check && bun ../scripts/validate-mocks.ts",
     "gen:enums": "bun ../scripts/gen-enums.ts",
     "typecheck": "bun --bun tsc -p tsconfig.json"
   },

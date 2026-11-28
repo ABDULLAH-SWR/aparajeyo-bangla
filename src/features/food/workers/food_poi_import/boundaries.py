@@ -6,9 +6,12 @@ import io
 import json
 import logging
 import zipfile
+from typing import Any
 
 import httpx
+import psycopg
 import shapely
+from psycopg.rows import DictRow
 from shapely.geometry import MultiPolygon, Polygon, shape
 
 from food_shared.config import DATA_DIR
@@ -26,19 +29,19 @@ HDX_GEOJSON_ZIP = (
 )
 
 
-def _to_multipolygon_wkt(geom_dict: dict) -> str:
+def _to_multipolygon_wkt(geom_dict: dict[str, Any]) -> str:
     g = shape(geom_dict)
     if isinstance(g, Polygon):
         g = MultiPolygon([g])
-    return shapely.force_2d(g).wkt
+    return str(shapely.force_2d(g).wkt)
 
 
-def _counts(cur) -> tuple[int, int]:
+def _counts(cur: psycopg.Cursor[DictRow]) -> tuple[int, int]:
     cur.execute(
         "SELECT (SELECT COUNT(*) FROM geo_districts) AS d, (SELECT COUNT(*) FROM geo_upazilas) AS u"
     )
-    row = cur.fetchone()
-    return row["d"], row["u"]
+    (row,) = cur.fetchall()
+    return int(row["d"]), int(row["u"])
 
 
 def _download_boundaries() -> None:
@@ -52,7 +55,7 @@ def _download_boundaries() -> None:
         zf.extract(ADM3_PATH.name, BOUNDARY_DIR)
 
 
-def _names(meta: dict, code: str, source_name: str) -> tuple[str, str]:
+def _names(meta: dict[str, Any], code: str, source_name: str) -> tuple[str, str]:
     """(name_en, name_bn) from the geo codes. HDX supplies only an English fallback."""
     name_bn = meta.get("name_bn", "")
     if not name_bn:
@@ -60,7 +63,9 @@ def _names(meta: dict, code: str, source_name: str) -> tuple[str, str]:
     return meta.get("name_en", source_name), name_bn
 
 
-def seed_cod_ab_boundaries(conn, geo_codes: dict) -> tuple[int, int]:
+def seed_cod_ab_boundaries(
+    conn: psycopg.Connection[DictRow], geo_codes: dict[str, Any]
+) -> tuple[int, int]:
     """Fills any missing boundaries and commits. `conn` must return dict rows."""
     with conn.cursor() as cur:
         d_cnt, u_cnt = _counts(cur)

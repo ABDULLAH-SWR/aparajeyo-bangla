@@ -8,6 +8,7 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 FOOD_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = FOOD_ROOT / "data"
@@ -47,7 +48,7 @@ def require(env: Mapping[str, str], *names: str) -> list[str]:
     return [env[name] for name in names]
 
 
-def load_geo_codes(env: Mapping[str, str]) -> dict:
+def load_geo_codes(env: Mapping[str, str]) -> dict[str, Any]:
     """The checksum-verified geo codes. A relative GEO_CODES_PATH starts at the feature root."""
     (raw_path,) = require(env, "GEO_CODES_PATH")
     path = FOOD_ROOT / raw_path
@@ -58,14 +59,15 @@ def load_geo_codes(env: Mapping[str, str]) -> dict:
         raise ConfigError(f"GEO_CODES_PATH: cannot read {cause.filename}") from cause
     if hashlib.sha256(content).hexdigest() != expected:
         raise ConfigError(f"GEO_CODES_PATH: sha256 differs from data/{GEO_CODES_CHECKSUM.name}")
-    return json.loads(content)
+    geo_codes: dict[str, Any] = json.loads(content)
+    return geo_codes
 
 
 @dataclass(frozen=True)
 class WorkerConfig:
     database_url: str
     valkey_url: str
-    geo_codes: dict
+    geo_codes: dict[str, Any]
 
 
 def load_worker_config(env: Mapping[str, str]) -> WorkerConfig:

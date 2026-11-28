@@ -1,4 +1,5 @@
-"""Writer side of the Valkey cache contract: bumping the epoch invalidates the API's cached responses."""
+"""Writer side of the Valkey cache contract: bumping the epoch invalidates the API's cached
+responses."""
 
 from __future__ import annotations
 
