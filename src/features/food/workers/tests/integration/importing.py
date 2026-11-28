@@ -62,7 +62,9 @@ def osm_variant(directory: Path, *, drop: tuple[str, ...] = (), add: tuple[dict,
     return path
 
 
-def overture_variant(directory: Path, *, drop: tuple[str, ...] = (), add: tuple[dict, ...] = ()) -> Path:
+def overture_variant(
+    directory: Path, *, drop: tuple[str, ...] = (), add: tuple[dict, ...] = ()
+) -> Path:
     """The Overture fixture without the `drop` ids and with extra restaurant rows."""
     table = pq.read_table(OVERTURE_FIXTURE)
     table = table.filter(pc.invert(pc.is_in(table["id"], pa.array(list(drop), pa.string()))))

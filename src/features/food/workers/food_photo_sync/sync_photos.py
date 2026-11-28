@@ -100,8 +100,13 @@ def fetch_commons_photo(client: httpx.Client, title: str) -> dict | None:
         if not is_allowed_license(lic, ext.get("NonFree", {}).get("value")):
             return None
         author = strip_html(ext.get("Artist", {}).get("value")) or "Wikimedia Commons contributor"
-        lic_url = strip_html(ext.get("LicenseUrl", {}).get("value")) or "https://creativecommons.org/"
-        page_url = info.get("descriptionurl") or f"https://commons.wikimedia.org/wiki/{title.replace(' ', '_')}"
+        lic_url = (
+            strip_html(ext.get("LicenseUrl", {}).get("value")) or "https://creativecommons.org/"
+        )
+        page_url = (
+            info.get("descriptionurl")
+            or f"https://commons.wikimedia.org/wiki/{title.replace(' ', '_')}"
+        )
         raw_url = info.get("url")
         if not raw_url:
             continue
@@ -148,7 +153,9 @@ def sync_photos(database_url: str, limit: int = 100) -> dict:
     skipped = 0
     errors = 0
 
-    with httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=20.0, follow_redirects=True) as client:
+    with httpx.Client(
+        headers={"User-Agent": USER_AGENT}, timeout=20.0, follow_redirects=True
+    ) as client:
         for row in rows:
             place_id = row["id"]
             tags = row["tags"] if isinstance(row["tags"], dict) else json.loads(row["tags"])

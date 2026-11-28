@@ -49,5 +49,10 @@ def test_c4_a_point_far_offshore_is_rejected_and_recorded(import_db, tmp_path):
         " JOIN sync_runs s ON s.id = r.run_id"
     ).fetchall()
     assert rejects == [
-        {"source": "osm", "source_id": "node/52", "reason": "outside_admin_polygons", "status": "succeeded"}
+        {
+            "source": "osm",
+            "source_id": "node/52",
+            "reason": "outside_admin_polygons",
+            "status": "succeeded",
+        }
     ]

@@ -36,9 +36,7 @@ def classify_osm_tags(tags: dict[str, str], cmap: dict) -> tuple[str | None, lis
             category = cmap["osm_amenity_map"][amenity]
     elif shop in cmap["osm_shop_map"]:
         category = cmap["osm_shop_map"][shop]
-    elif amenity == "vending_machine" and vending == "food":
-        category = "street_food"
-    elif shop == "kiosk" and cuisine_raw:
+    elif (amenity == "vending_machine" and vending == "food") or (shop == "kiosk" and cuisine_raw):
         category = "street_food"
 
     if category is None:

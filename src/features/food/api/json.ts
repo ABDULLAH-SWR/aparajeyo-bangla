@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-export type ParsedJson<T> = { ok: true; value: T } | { ok: false; error: unknown };
+type ParsedJson<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
 /** Parses JSON text and validates it against `schema`. Syntax and schema failures are returned, not thrown. */
 export function parseJson<T extends z.ZodType>(text: string, schema: T): ParsedJson<z.output<T>> {

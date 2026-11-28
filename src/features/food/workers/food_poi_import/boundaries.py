@@ -104,7 +104,13 @@ def seed_cod_ab_boundaries(conn, geo_codes: dict) -> tuple[int, int]:
                       name_bn = EXCLUDED.name_bn,
                       geom = EXCLUDED.geom
                     """,
-                    (code, p["adm2_pcode"], name_en, name_bn, _to_multipolygon_wkt(feat["geometry"])),
+                    (
+                        code,
+                        p["adm2_pcode"],
+                        name_en,
+                        name_bn,
+                        _to_multipolygon_wkt(feat["geometry"]),
+                    ),
                 )
         d_cnt, u_cnt = _counts(cur)
     if (d_cnt, u_cnt) != (ADM2_COUNT, ADM3_COUNT):

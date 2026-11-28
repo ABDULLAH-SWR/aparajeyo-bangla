@@ -124,7 +124,9 @@ def run_import(
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--skip-download", action="store_true", help="reuse the downloaded OSM file")
+    parser.add_argument(
+        "--skip-download", action="store_true", help="reuse the downloaded OSM file"
+    )
     parser.add_argument("--skip-overture", action="store_true")
     parser.add_argument("--backfill-merged-into", action="store_true")
     args = parser.parse_args()

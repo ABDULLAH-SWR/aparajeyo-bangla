@@ -90,10 +90,12 @@ class FoodDb:
     def _insert(self, table: str, row: dict, returning: str = "1") -> dict:
         columns = ", ".join(row)
         values = ", ".join(["%s"] * len(row))
-        return self.conn.execute(
+        inserted = self.conn.execute(
             f"INSERT INTO {table} ({columns}) VALUES ({values}) RETURNING {returning}",
             list(row.values()),
         ).fetchone()
+        assert inserted is not None
+        return inserted
 
 
 @pytest.fixture

@@ -35,28 +35,30 @@ def download_pbf_if_needed(force: bool = False) -> Path:
         if meta.get("last_modified"):
             headers["If-Modified-Since"] = meta["last_modified"]
 
-    with httpx.Client(follow_redirects=True, timeout=300.0) as client:
-        with client.stream("GET", GEOFABRIK_PBF_URL, headers=headers) as resp:
-            if resp.status_code == 304 and PBF_PATH.exists():
-                return PBF_PATH
-            resp.raise_for_status()
-            tmp = PBF_PATH.with_suffix(".osm.pbf.part")
-            with tmp.open("wb") as fh:
-                for chunk in resp.iter_bytes(chunk_size=1024 * 256):
-                    fh.write(chunk)
-            tmp.replace(PBF_PATH)
-            PBF_META_PATH.write_text(
-                json.dumps(
-                    {
-                        "etag": resp.headers.get("etag"),
-                        "last_modified": resp.headers.get("last-modified"),
-                        "downloaded_at": now_bst_iso(),
-                        "bytes": PBF_PATH.stat().st_size,
-                    },
-                    indent=2,
-                ),
-                encoding="utf-8",
-            )
+    with (
+        httpx.Client(follow_redirects=True, timeout=300.0) as client,
+        client.stream("GET", GEOFABRIK_PBF_URL, headers=headers) as resp,
+    ):
+        if resp.status_code == 304 and PBF_PATH.exists():
+            return PBF_PATH
+        resp.raise_for_status()
+        tmp = PBF_PATH.with_suffix(".osm.pbf.part")
+        with tmp.open("wb") as fh:
+            for chunk in resp.iter_bytes(chunk_size=1024 * 256):
+                fh.write(chunk)
+        tmp.replace(PBF_PATH)
+        PBF_META_PATH.write_text(
+            json.dumps(
+                {
+                    "etag": resp.headers.get("etag"),
+                    "last_modified": resp.headers.get("last-modified"),
+                    "downloaded_at": now_bst_iso(),
+                    "bytes": PBF_PATH.stat().st_size,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
     return PBF_PATH
 
 

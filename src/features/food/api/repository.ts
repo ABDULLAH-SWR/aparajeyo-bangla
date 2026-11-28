@@ -10,7 +10,7 @@ export type PinScope =
   | { kind: "bbox"; tiles: TileRange }
   | { kind: "featured" };
 
-export interface PinFilters {
+interface PinFilters {
   category?: readonly string[];
   has_video?: boolean;
 }

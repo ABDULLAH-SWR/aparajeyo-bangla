@@ -54,7 +54,11 @@ def index_channels(database_url: str, max_pages_per_channel: int = 5) -> dict:
 
     if not channels:
         conn.close()
-        return {"status": "skipped", "reason": "No active channels in youtube_channels", "quota_units": 0}
+        return {
+            "status": "skipped",
+            "reason": "No active channels in youtube_channels",
+            "quota_units": 0,
+        }
 
     quota_units = 0
     new_videos = 0
@@ -111,7 +115,9 @@ def index_channels(database_url: str, max_pages_per_channel: int = 5) -> dict:
                 resp.raise_for_status()
                 for v in resp.json().get("items", []):
                     status = v.get("status", {})
-                    if status.get("privacyStatus") != "public" or not status.get("embeddable", False):
+                    if status.get("privacyStatus") != "public" or not status.get(
+                        "embeddable", False
+                    ):
                         continue
                     snip = v.get("snippet", {})
                     dur = parse_iso_duration(v.get("contentDetails", {}).get("duration", ""))
@@ -153,7 +159,12 @@ def index_channels(database_url: str, max_pages_per_channel: int = 5) -> dict:
 
     conn.commit()
     conn.close()
-    return {"status": "ok", "channels": len(channels), "new_videos": new_videos, "quota_units": quota_units}
+    return {
+        "status": "ok",
+        "channels": len(channels),
+        "new_videos": new_videos,
+        "quota_units": quota_units,
+    }
 
 
 def main() -> None:

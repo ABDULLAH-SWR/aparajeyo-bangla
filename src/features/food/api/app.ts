@@ -20,7 +20,7 @@ const CORS_304_HEADERS = ["access-control-allow-origin", "access-control-expose-
 const PINS_TTL_SECONDS = 3600;
 const DETAIL_TTL_SECONDS = 86_400;
 
-export interface FoodAppDeps {
+interface FoodAppDeps {
   config: Pick<Config, "districtIds" | "corsAllowedOrigins">;
   repo: FoodRepository;
   cache: ValkeyCache;

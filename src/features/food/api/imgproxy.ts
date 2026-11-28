@@ -9,7 +9,7 @@ export class UnsupportedWidthError extends Error {
   }
 }
 
-export interface ImgproxyConfig {
+interface ImgproxyConfig {
   baseUrl: string;
   /** Hex-encoded. */
   keyHex: string;

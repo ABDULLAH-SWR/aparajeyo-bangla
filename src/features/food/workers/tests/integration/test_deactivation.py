@@ -40,7 +40,9 @@ def test_c3_a_truncated_source_aborts_the_run_and_changes_nothing(import_db, tmp
     before = snapshot(import_db)
     # 4 Overture rows are active; 3 candidates is 75 % of that. The OSM file also changes.
     truncated = overture_variant(tmp_path, drop=("ovt-star", "ovt-akboria", "ovt-kacchi"))
-    changed_osm = osm_variant(tmp_path, drop=("node/4",), add=({"id": 60, "lng": 90.36, "lat": 23.78},))
+    changed_osm = osm_variant(
+        tmp_path, drop=("node/4",), add=({"id": 60, "lng": 90.36, "lat": 23.78},)
+    )
 
     with pytest.raises(ImportSanityError, match="overture"):
         import_sources(import_db, osm=changed_osm, overture=truncated)
@@ -51,5 +53,6 @@ def test_c3_a_truncated_source_aborts_the_run_and_changes_nothing(import_db, tmp
 def snapshot(db) -> dict:
     tables = ("places", "sync_runs", "food_import_rejects", "conflation_review_queue")
     return {
-        t: db.conn.execute(f"SELECT t::text AS row FROM {t} t ORDER BY 1").fetchall() for t in tables
+        t: db.conn.execute(f"SELECT t::text AS row FROM {t} t ORDER BY 1").fetchall()
+        for t in tables
     }

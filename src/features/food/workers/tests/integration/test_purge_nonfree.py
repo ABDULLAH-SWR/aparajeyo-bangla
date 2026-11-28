@@ -45,8 +45,10 @@ def test_purge_keeps_the_row_when_its_object_cannot_be_deleted(food_db):
     food_db.seed_geo()
     food_db.insert_photo(food_db.insert_place(), "CC BY-NC 4.0", "2" * 64)
 
-    with psycopg.connect(food_db.url, row_factory=dict_row) as conn:
-        with pytest.raises(ConnectionError):
-            purge_nonfree(conn, FakeS3(fail=True), "bucket")
+    with (
+        psycopg.connect(food_db.url, row_factory=dict_row) as conn,
+        pytest.raises(ConnectionError),
+    ):
+        purge_nonfree(conn, FakeS3(fail=True), "bucket")
 
     assert photo_licenses(food_db) == ["CC BY-NC 4.0"]

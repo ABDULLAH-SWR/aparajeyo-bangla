@@ -100,12 +100,14 @@ def run_matching(database_url: str) -> dict:
 
     places_by_dist: dict[str, list[dict]] = {}
     for p in places:
-        places_by_dist.setdefault(p["district_id"], []).append({
-            "id": p["id"],
-            "norm_en": normalize_match_key(p["name_en"]),
-            "norm_bn": normalize_match_key(p["name_bn"]),
-            "roman": transliterate_bn_for_matching(p["name_bn"] or p["name_en"]),
-        })
+        places_by_dist.setdefault(p["district_id"], []).append(
+            {
+                "id": p["id"],
+                "norm_en": normalize_match_key(p["name_en"]),
+                "norm_bn": normalize_match_key(p["name_bn"]),
+                "roman": transliterate_bn_for_matching(p["name_bn"] or p["name_en"]),
+            }
+        )
 
     upserted = 0
 

@@ -24,7 +24,11 @@ def load_env_files() -> None:
     """Fills unset environment variables from the local env files. The first value wins:
     workers/.env.local (the food_worker DATABASE_URL), then the files shared with the rest of the
     stack. scripts/dev-up.sh generates both .env.local files."""
-    for path in (FOOD_ROOT / "workers" / ".env.local", FOOD_ROOT / ".env.local", FOOD_ROOT / ".env"):
+    for path in (
+        FOOD_ROOT / "workers" / ".env.local",
+        FOOD_ROOT / ".env.local",
+        FOOD_ROOT / ".env",
+    ):
         if not path.exists():
             continue
         for line in path.read_text(encoding="utf-8").splitlines():
