@@ -2,9 +2,8 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertMatch, insertPlace } from "../support/fixtures";
+import { insertImportRun, insertMatch, insertPlace, insertVideo } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertContractVideo, insertImportRun } from "../support/seed";
 import { createFileValkey, type FileValkey } from "../support/valkey";
 
 const DISTRICT = "overlay=food&district_id=BD3026";
@@ -22,7 +21,7 @@ beforeAll(async () => {
   cafe = await insertPlace(db.sql, { name_en: "A Cafe", category: "cafe" });
   teaStall = await insertPlace(db.sql, { name_en: "B Tea", category: "tea_stall" });
   await insertPlace(db.sql, { name_en: "C Restaurant" });
-  await insertContractVideo(db.sql, "aaaaaaaaaaa");
+  await insertVideo(db.sql, "aaaaaaaaaaa");
   await insertMatch(db.sql, "aaaaaaaaaaa", teaStall);
   t = createTestApp({ databaseUrl: db.url, valkeyUrl: valkey.url });
 });

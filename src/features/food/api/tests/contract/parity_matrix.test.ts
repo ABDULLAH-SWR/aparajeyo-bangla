@@ -4,9 +4,8 @@ import { FOOD_ERROR_CODES } from "../../../contract/enums";
 import { ApiErrorResponseSchema } from "../../../contract/schemas";
 import { CONTRACT_MATRIX, PLACE_ID, type MatrixRow } from "../../../testdata/contract_matrix";
 import { CLOSED_DATABASE_URL, createTestApp, type TestApp } from "../support/app";
-import { insertMatch, insertPhoto, insertPlace } from "../support/fixtures";
+import { insertMatch, insertPhoto, insertPlace, insertVideo } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertContractVideo } from "../support/seed";
 
 let db: FileDb;
 let up: TestApp;
@@ -16,7 +15,7 @@ beforeAll(async () => {
   db = await createFileDb();
   await insertPlace(db.sql, { id: PLACE_ID, category: "tea_stall", geom: "SRID=4326;POINT(90.4 23.72)" });
   await insertPhoto(db.sql, PLACE_ID);
-  await insertContractVideo(db.sql, "dQw4w9WgXcQ");
+  await insertVideo(db.sql, "dQw4w9WgXcQ");
   await insertMatch(db.sql, "dQw4w9WgXcQ", PLACE_ID);
   up = createTestApp({ databaseUrl: db.url });
   down = createTestApp({ databaseUrl: CLOSED_DATABASE_URL });

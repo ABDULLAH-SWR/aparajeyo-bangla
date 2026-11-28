@@ -1,8 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertPlace } from "../support/fixtures";
+import { insertImportRun, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertImportRun } from "../support/seed";
 
 const PINS = "/api/v1/pins?overlay=food&district_id=BD3026";
 const ORIGIN = "https://map.example.test";

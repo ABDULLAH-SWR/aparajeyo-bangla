@@ -3,9 +3,8 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
 import { fixedClock } from "../support/clock";
-import { insertPlace } from "../support/fixtures";
+import { insertImportRun, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertImportRun } from "../support/seed";
 import { createFileValkey, type FileValkey } from "../support/valkey";
 
 const PINS = "/api/v1/pins?overlay=food&district_id=BD3026";

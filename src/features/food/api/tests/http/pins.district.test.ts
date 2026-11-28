@@ -1,9 +1,8 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { DHAKA, insertPlace } from "../support/fixtures";
+import { DHAKA, insertDistrict, insertImportRun, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertImportRun, insertDistrict } from "../support/seed";
 
 const CHATTOGRAM = "BD2015";
 

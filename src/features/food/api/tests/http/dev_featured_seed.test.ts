@@ -2,9 +2,8 @@ import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertPlace } from "../support/fixtures";
+import { insertDistrict, insertImportRun, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertDistrict, insertImportRun } from "../support/seed";
 
 const SEED = new URL("../../../db/seeds/dev_featured.sql", import.meta.url);
 const DISTRICTS = ["BD2015", "BD3026", "BD5010", "BD6091"];

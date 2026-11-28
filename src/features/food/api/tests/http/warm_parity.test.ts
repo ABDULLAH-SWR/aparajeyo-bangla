@@ -2,9 +2,8 @@
 // indistinguishable from a computed one.
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertPlace } from "../support/fixtures";
+import { insertImportRun, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertImportRun } from "../support/seed";
 import { createFileValkey, type FileValkey } from "../support/valkey";
 
 let db: FileDb;

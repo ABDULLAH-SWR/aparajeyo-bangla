@@ -1,9 +1,8 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinsFeatureCollectionSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { insertMatch, insertPlace } from "../support/fixtures";
+import { insertImportRun, insertMatch, insertPlace, insertVideo } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertContractVideo, insertImportRun } from "../support/seed";
 
 let db: FileDb;
 let t: TestApp;
@@ -17,7 +16,7 @@ beforeAll(async () => {
   filmed = await insertPlace(db.sql, { name_en: "A Filmed Cafe" });
   featured = await insertPlace(db.sql, { name_en: "Z Featured Hotel", is_featured: true });
   await insertPlace(db.sql, { name_en: "Plain Stall" });
-  await insertContractVideo(db.sql, "aaaaaaaaaaa");
+  await insertVideo(db.sql, "aaaaaaaaaaa");
   await insertMatch(db.sql, "aaaaaaaaaaa", filmed);
   t = createTestApp({ databaseUrl: db.url });
 });

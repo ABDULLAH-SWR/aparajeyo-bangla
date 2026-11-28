@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { CLOSED_DATABASE_URL, createTestApp, type TestAppOptions } from "../support/app";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertImportRun } from "../support/seed";
+import { insertImportRun } from "../support/fixtures";
 import { createFileValkey, type FileValkey } from "../support/valkey";
 
 let db: FileDb;

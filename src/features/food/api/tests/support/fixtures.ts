@@ -15,6 +15,13 @@ export async function seedGeo(sql: postgres.Sql): Promise<void> {
   await sql.unsafe(readFileSync(GEO_SEED, "utf8"));
 }
 
+/** One more district, for tests that need more than the geo fixture holds. */
+export async function insertDistrict(sql: postgres.Sql, id: string, name: string): Promise<void> {
+  await sql`INSERT INTO geo_districts (id, name_en, name_bn, geom)
+    VALUES (${id}, ${name}, ${name},
+      ST_GeomFromText('MULTIPOLYGON(((91.7 22.2,91.9 22.2,91.9 22.4,91.7 22.4,91.7 22.2)))', 4326))`;
+}
+
 export async function insertPlace(
   sql: postgres.Sql,
   overrides: Record<string, string | boolean | string[] | null> = {},
@@ -59,13 +66,15 @@ export async function insertPhoto(
   await sql`INSERT INTO place_photos ${sql(row)}`;
 }
 
-/** Inserts a video, creating its channel on first use. */
+const CHANNEL_ID = `UC${"a".repeat(22)}`;
+
+/** Inserts a video with a contract-valid channel ID, creating the channel on first use. */
 export async function insertVideo(sql: postgres.Sql, videoId: string): Promise<void> {
   await sql`INSERT INTO youtube_channels (channel_id, uploads_playlist_id, title, overlay_type)
-    VALUES ('UCtest', 'UUtest', 'Test Channel', 'food') ON CONFLICT (channel_id) DO NOTHING`;
+    VALUES (${CHANNEL_ID}, 'UUtest', 'Dhaka Eats', 'food') ON CONFLICT (channel_id) DO NOTHING`;
   await sql`INSERT INTO youtube_videos
     (video_id, channel_id, title, published_at, duration_seconds, last_verified_at)
-    VALUES (${videoId}, 'UCtest', 'Test Video', now(), 600, now())`;
+    VALUES (${videoId}, ${CHANNEL_ID}, 'Old Dhaka food walk', '2026-10-05T20:30:00Z', 900, now())`;
 }
 
 export async function insertMatch(
@@ -83,4 +92,10 @@ export async function insertMatch(
     ...overrides,
   };
   await sql`INSERT INTO video_place_matches ${sql(row)}`;
+}
+
+/** A succeeded POI import. dataset_version is deliberately unrelated: the API derives it from finished_at. */
+export async function insertImportRun(sql: postgres.Sql, finishedAt = "2026-11-20T04:00:00Z"): Promise<void> {
+  await sql`INSERT INTO sync_runs (source, dataset_version, imported_count, status, finished_at)
+    VALUES ('food_poi_import', 'unused', 0, 'succeeded', ${finishedAt})`;
 }

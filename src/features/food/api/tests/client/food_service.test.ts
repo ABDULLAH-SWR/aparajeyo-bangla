@@ -4,9 +4,8 @@ import { FoodPinDetailSchema, FoodPinsFeatureCollectionSchema } from "../../../c
 import { createFoodService, FoodApiError } from "../../../foodService";
 import type { FoodCategory } from "../../../types";
 import { createTestApp, type TestApp } from "../support/app";
-import { DHAKA, insertPlace } from "../support/fixtures";
+import { DHAKA, insertImportRun, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertImportRun } from "../support/seed";
 
 const BASE_URL = "http://food.example.test";
 

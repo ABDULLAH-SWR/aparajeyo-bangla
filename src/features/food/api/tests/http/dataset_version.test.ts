@@ -1,9 +1,8 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { createTestApp } from "../support/app";
 import { fixedClock } from "../support/clock";
-import { insertPlace } from "../support/fixtures";
+import { insertImportRun, insertPlace } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertImportRun } from "../support/seed";
 
 const PINS = "/api/v1/pins?overlay=food&district_id=BD3026";
 // Already 1 December in Dhaka; the clock still says 30 November everywhere.

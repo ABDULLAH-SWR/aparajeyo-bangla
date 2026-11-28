@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { afterAll, afterEach, beforeAll, expect, inject, test } from "vitest";
 import { createFileDb, type FileDb } from "./support/pg";
-import { insertImportRun } from "./support/seed";
+import { insertImportRun } from "./support/fixtures";
 import { validEnv, without } from "./support/env";
 
 const SERVER = fileURLToPath(new URL("../server.ts", import.meta.url));

@@ -1,9 +1,8 @@
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { FoodPinDetailSchema } from "../../../contract/schemas";
 import { createTestApp, type TestApp } from "../support/app";
-import { DHAKA, DHANMONDI, insertMatch, insertPhoto, insertPlace } from "../support/fixtures";
+import { DHAKA, DHANMONDI, insertMatch, insertPhoto, insertPlace, insertVideo } from "../support/fixtures";
 import { createFileDb, type FileDb } from "../support/pg";
-import { insertContractVideo } from "../support/seed";
 
 let db: FileDb;
 let t: TestApp;
@@ -18,7 +17,7 @@ beforeAll(async () => {
   });
   await insertPhoto(db.sql, placeId, { sha256: "a".repeat(64), sort_order: 1 });
   await insertPhoto(db.sql, placeId, { sha256: "b".repeat(64), sort_order: 0 });
-  for (const id of ["aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc"]) await insertContractVideo(db.sql, id);
+  for (const id of ["aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc"]) await insertVideo(db.sql, id);
   await insertMatch(db.sql, "aaaaaaaaaaa", placeId, { confidence: 0.85 });
   await insertMatch(db.sql, "bbbbbbbbbbb", placeId, { confidence: 0.95, start_seconds: 754 });
   await insertMatch(db.sql, "ccccccccccc", placeId, { confidence: 0.99, status: "pending" });
